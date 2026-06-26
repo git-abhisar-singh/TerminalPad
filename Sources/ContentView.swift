@@ -505,7 +505,10 @@ struct AgentTile: View {
             .scaleEffect(hover ? 1.04 : 1.0)
         }
         .buttonStyle(.plain)
-        .onHover { hover = $0 }
+        .onHover { h in
+            if h && !hover { Haptics.tick() }   // gentle tick on hover-enter only
+            hover = h
+        }
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: hover)
     }
 }
@@ -621,6 +624,13 @@ extension View {
             self.glassEffect(.regular.tint(tint.opacity(0.22)),
                              in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         } else { self }
+    }
+}
+
+/// Subtle haptic tick on Force Touch trackpads (no-op on hardware without haptics).
+enum Haptics {
+    static func tick() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
     }
 }
 
