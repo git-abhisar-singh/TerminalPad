@@ -178,13 +178,14 @@ struct ContentView: View {
             HStack(spacing: 8) {
                 if showSettings {
                     Button { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } } label: {
-                        HStack(spacing: 2) {
-                            Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
-                            Text("Back").font(.system(size: 13))
-                        }
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 19, weight: .semibold))
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).foregroundStyle(.primary)
-                    .padding(.leading, 78)
+                    .help("Back")
+                    .padding(.leading, 90)
                 }
                 Spacer()
                 if !showSettings {
