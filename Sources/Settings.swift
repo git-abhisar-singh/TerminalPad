@@ -24,7 +24,7 @@ struct SettingsView: View {
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("launchAtLogin") private var launchAtLogin = false
-    @AppStorage("glassBlur") private var glassBlur = false
+    @AppStorage("glassBlur") private var glassBlur = true
     @State private var resetConfirm = false
 
     var body: some View {
@@ -73,6 +73,25 @@ struct SettingsView: View {
     private func setLoginItem(_ on: Bool) {
         do { on ? try SMAppService.mainApp.register() : try SMAppService.mainApp.unregister() }
         catch { NSLog("AgentPad: login item error: \(error)") }
+    }
+}
+
+/// In-app Settings presented as a sheet (gear button in the header).
+struct SettingsSheet: View {
+    let onDone: () -> Void
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Settings").font(.system(size: 15, weight: .semibold))
+                Spacer()
+                Button("Done", action: onDone).keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 12)
+            Divider()
+            SettingsView()
+        }
+        .frame(width: 460)
+        .preferredColorScheme(.dark)
     }
 }
 

@@ -10,7 +10,8 @@ struct ContentView: View {
     @FocusState private var searchFocused: Bool
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
-    @AppStorage("glassBlur") private var glassBlur = false
+    @AppStorage("glassBlur") private var glassBlur = true
+    @State private var showSettings = false
 
     private let columns = [GridItem(.adaptive(minimum: 138, maximum: 164), spacing: 26)]
 
@@ -74,6 +75,9 @@ struct ContentView: View {
             DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .agentpadReload)) { _ in reload() }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet { showSettings = false }
+        }
     }
 
     // MARK: search
@@ -85,21 +89,34 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             TextField("Search agents and tools…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 22, weight: .regular))
+                .font(.system(size: 21, weight: .regular))
                 .focused($searchFocused)
                 .onSubmit(launchSelected)
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow)   { move(-1); return .handled }
                 .onKeyPress(.escape)    { if query.isEmpty { NSApp.keyWindow?.close() } else { query = "" }; return .handled }
             if !query.isEmpty {
-                Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                headerButton("xmark.circle.fill") { query = "" }
             }
-            Button { reload() } label: { Image(systemName: "arrow.clockwise") }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                .help("Rescan installed tools")
+            headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
+            headerButton("gearshape", help: "Settings") { showSettings = true }
         }
-        .padding(.horizontal, 24).padding(.vertical, 18)
+        .padding(.leading, 80)      // clear the traffic-light buttons
+        .padding(.trailing, 22)
+        .padding(.top, 18)
+        .padding(.bottom, 16)
+    }
+
+    private func headerButton(_ symbol: String, help: String = "", action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .medium))
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help(help)
     }
 
     // MARK: content
@@ -107,7 +124,7 @@ struct ContentView: View {
     @ViewBuilder private var content: some View {
         if query.isEmpty {
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 26) {
+                LazyVGrid(columns: columns, spacing: 28) {
                     ForEach(all) { agent in
                         AgentTile(agent: agent, logos: logos) { tapped in
                             if tapped.variants.count <= 1 {
@@ -123,8 +140,9 @@ struct ContentView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 34).padding(.vertical, 28)
+                .padding(.horizontal, 34).padding(.top, 22).padding(.bottom, 40)
             }
+            .bottomFade()
         } else if results.isEmpty {
             VStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -144,8 +162,9 @@ struct ContentView: View {
                                 .onHover { if $0 { selection = i } }
                         }
                     }
-                    .padding(12)
+                    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
                 }
+                .bottomFade()
                 .onChange(of: selection) { _, s in withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(s, anchor: .center) } }
             }
         }
@@ -334,6 +353,17 @@ struct VariantRow: View {
 // MARK: - Glass
 
 extension View {
+    /// Fades the very bottom edge of scrolling content to transparent (no hard cut), bg-agnostic.
+    func bottomFade(_ h: CGFloat = 26) -> some View {
+        mask(
+            VStack(spacing: 0) {
+                Rectangle().fill(.black)
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: h)
+            }
+        )
+    }
+
     @ViewBuilder func iconGlass(tint: Color) -> some View {
         if #available(macOS 26.0, *) {
             self.glassEffect(.regular.tint(tint.opacity(0.22)),
