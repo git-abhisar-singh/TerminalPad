@@ -35,7 +35,17 @@ struct SettingsView: View {
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("glassBlur") private var glassBlur = true
     @AppStorage("appearance") private var appearance = "system"
+    @AppStorage("rescanOnLaunch") private var rescanOnLaunch = true
     @State private var resetConfirm = false
+    @State private var newName = ""
+    @State private var newCommand = ""
+    @State private var newAlias = ""
+    @State private var newColor = "#5B8DEF"
+    @State private var updateStatus = ""
+
+    private var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
 
     var body: some View {
         Form {
@@ -58,26 +68,84 @@ struct SettingsView: View {
             Section("Library") {
                 Toggle("Show discovered CLI tools", isOn: $showDiscovered)
                     .onChange(of: showDiscovered) { _, _ in post() }
+                Toggle("Rescan tools on launch", isOn: $rescanOnLaunch)
                 HStack {
                     Button("Edit agents.json…") { openConfig() }
                     Button("Rescan tools") { post() }
+                    Button("Refresh logos") { refreshLogos() }
                     Button("Reset to defaults") { resetConfirm = true }
                         .confirmationDialog("Reset agents.json to defaults?", isPresented: $resetConfirm) {
                             Button("Reset", role: .destructive) { ConfigStore.reseed(); post() }
                         }
                 }
             }
+            Section("Add Agent") {
+                TextField("Name", text: $newName)
+                TextField("Command (e.g. aider --yes)", text: $newCommand)
+                TextField("Aliases, comma-separated (optional)", text: $newAlias)
+                TextField("Color hex (optional)", text: $newColor)
+                Button("Add Agent") { addAgent() }
+                    .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty
+                              || newCommand.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
             Section("System") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in setLoginItem(on) }
             }
-            Section {
-                Text("Edit \(ConfigStore.file.path) to add agents and modes. Logos resolve from Resources/logos or Simple Icons.")
-                    .font(.caption).foregroundStyle(.secondary)
+            Section("About") {
+                HStack {
+                    Text("Version \(version)").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Check for Updates") { checkUpdate() }
+                    if !updateStatus.isEmpty {
+                        Text(updateStatus).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 420)
+        .frame(width: 480, height: 560)
+    }
+
+    private func addAgent() {
+        let name = newName.trimmingCharacters(in: .whitespaces)
+        let cmd = newCommand.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, !cmd.isEmpty else { return }
+        var agents = ConfigStore.load()
+        let aliases = newAlias.split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let color = newColor.hasPrefix("#") ? newColor : "#5B8DEF"
+        let mono = String(name.prefix(2)).uppercased()
+        let logoSlug = cmd.split(separator: " ").first.map(String.init)
+        agents.append(Agent(name: name, icon: mono, color: color,
+                            variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: color)],
+                            logo: logoSlug, aliases: aliases))
+        ConfigStore.save(agents)
+        newName = ""; newCommand = ""; newAlias = ""; newColor = "#5B8DEF"
+        post()
+    }
+
+    private func refreshLogos() {
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".config/agentpad/logos")
+        try? FileManager.default.removeItem(at: dir)
+        post()
+    }
+
+    private func checkUpdate() {
+        updateStatus = "Checking…"
+        Task {
+            guard let url = URL(string: "https://api.github.com/repos/abhisarsinghwork/agentpad/releases/latest"),
+                  let (data, _) = try? await URLSession.shared.data(from: url),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let tag = json["tag_name"] as? String else {
+                await MainActor.run { updateStatus = "No releases yet" }
+                return
+            }
+            await MainActor.run {
+                updateStatus = tag.contains(version) ? "Up to date" : "Update: \(tag)"
+            }
+        }
     }
 
     private func post() { NotificationCenter.default.post(name: .agentpadReload, object: nil) }

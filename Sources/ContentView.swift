@@ -13,8 +13,14 @@ struct ContentView: View {
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
     @AppStorage("glassBlur") private var glassBlur = true
     @AppStorage("appearance") private var appearance = "system"
+    @AppStorage("rescanOnLaunch") private var rescanOnLaunch = true
+    @AppStorage("seenOnboarding") private var seenOnboarding = false
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
+    @State private var launchToast: String? = nil
+    @State private var helpText: String? = nil
+    @State private var helpTitle = ""
+    @State private var gridCols = 5
 
     private var isDark: Bool {
         switch appearance { case "light": return false; case "dark": return true
@@ -28,10 +34,47 @@ struct ContentView: View {
 
     private var all: [Agent] { showDiscovered ? curated + discovered : curated }
 
-    private func run(_ agent: Agent, _ command: String) {
+    private func run(_ agent: Agent, _ command: String, cwd: String? = nil) {
         usage.recordLaunch(agent.name)
-        Launcher.launch(command, cwd: agent.cwd)
-        if quitAfterLaunch { NSApp.hide(nil) }   // keep window alive; just dismiss (Spotlight-style)
+        Launcher.launch(command, cwd: cwd ?? agent.cwd)
+        withAnimation { launchToast = agent.name }
+        if quitAfterLaunch {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NSApp.hide(nil) }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+                if launchToast == agent.name { withAnimation { launchToast = nil } }
+            }
+        }
+    }
+
+    private func pickFolderAndRun(_ agent: Agent, _ command: String) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Run Here"
+        panel.message = "Choose a folder to run \(agent.name) in"
+        if panel.runModal() == .OK, let url = panel.url {
+            usage.addRecentDir(url.path)
+            run(agent, command, cwd: url.path)
+        }
+    }
+
+    private func showHelp(_ agent: Agent) {
+        guard let base = agent.variants.first?.command.split(separator: " ").first.map(String.init) else { return }
+        helpTitle = agent.name
+        helpText = "Loading…"
+        Task.detached(priority: .userInitiated) {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            p.arguments = ["-lc", "\(base) --help 2>&1 | head -250"]
+            let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
+            try? p.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            p.waitUntilExit()
+            let out = String(data: data, encoding: .utf8) ?? ""
+            await MainActor.run { helpText = out.isEmpty ? "No help output." : out }
+        }
     }
 
     private func score(_ a: Agent, _ q: String) -> Int {
@@ -82,7 +125,7 @@ struct ContentView: View {
         .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 560)
         .preferredColorScheme(scheme)
-        .task { await loadDiscovered() }
+        .task { if rescanOnLaunch { await loadDiscovered() } }
         .onChange(of: query) { _, _ in selection = 0 }
         .onAppear {
             logos.preload(curated.compactMap { $0.logo })
@@ -100,6 +143,20 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet { showSettings = false }
+        }
+        .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
+            HelpSheet(title: helpTitle, text: helpText ?? "") { helpText = nil }
+        }
+        .overlay(alignment: .bottom) {
+            if let t = launchToast {
+                Label("Launching \(t)…", systemImage: "terminal")
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+                    .padding(.bottom, 26)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
@@ -132,9 +189,11 @@ struct ContentView: View {
                 .font(.system(size: 15, weight: .regular))
                 .focused($searchFocused)
                 .onSubmit(launchSelected)
-                .onKeyPress(.downArrow) { move(1); return .handled }
-                .onKeyPress(.upArrow)   { move(-1); return .handled }
-                .onKeyPress(.escape)    { if query.isEmpty { NSApp.hide(nil) } else { query = "" }; return .handled }
+                .onKeyPress(.downArrow)  { selectRow(1); return .handled }
+                .onKeyPress(.upArrow)    { selectRow(-1); return .handled }
+                .onKeyPress(.leftArrow)  { if query.isEmpty { selectStep(-1); return .handled }; return .ignored }
+                .onKeyPress(.rightArrow) { if query.isEmpty { selectStep(1); return .handled }; return .ignored }
+                .onKeyPress(.escape)     { if query.isEmpty { NSApp.hide(nil) } else { query = "" }; return .handled }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundStyle(.secondary)
@@ -166,18 +225,23 @@ struct ContentView: View {
 
     @ViewBuilder private var content: some View {
         if query.isEmpty {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
-                    let favs = all.filter { usage.isPinned($0.name) }
-                    if !favs.isEmpty { section("Favorites", sortedByUse(favs)) }
-                    section("Agents", sortedByUse(curated))
-                    if showDiscovered && !discovered.isEmpty {
-                        section("Tools", sortedByUse(discovered))
+            let favs = sortedByUse(all.filter { usage.isPinned($0.name) })
+            let ags = sortedByUse(curated)
+            let tools = showDiscovered ? sortedByUse(discovered) : []
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if !seenOnboarding { onboardingCard }
+                        if !favs.isEmpty { section("Favorites", favs, base: 0) }
+                        section("Agents", ags, base: favs.count)
+                        if !tools.isEmpty { section("Tools", tools, base: favs.count + ags.count) }
                     }
+                    .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
                 }
-                .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
+                .bottomFade()
+                .onChange(of: geo.size.width) { _, w in updateCols(w) }
+                .onAppear { updateCols(geo.size.width) }
             }
-            .bottomFade()
         } else if results.isEmpty {
             VStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -215,7 +279,37 @@ struct ContentView: View {
         }.map { $0.element }
     }
 
-    @ViewBuilder private func section(_ title: String, _ items: [Agent]) -> some View {
+    /// Flattened grid order (must match the section render order) for keyboard nav.
+    private var gridAgents: [Agent] {
+        let favs = sortedByUse(all.filter { usage.isPinned($0.name) })
+        let tools = showDiscovered ? sortedByUse(discovered) : []
+        return favs + sortedByUse(curated) + tools
+    }
+
+    private func updateCols(_ width: CGFloat) {
+        let cols = max(1, Int((width - 60) / 148))
+        if cols != gridCols { gridCols = cols }
+    }
+
+    private var onboardingCard: some View {
+        HStack(spacing: 11) {
+            Image(systemName: "sparkles").font(.system(size: 14)).foregroundStyle(.yellow)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Welcome to AgentPad").font(.system(size: 12.5, weight: .semibold))
+                Text("Summon anywhere with ⌥⌘Space · arrow keys + Return to launch · right-click a tile to Pin or Run in Folder")
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button { withAnimation { seenOnboarding = true } } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }.buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 11)
+        .background((isDark ? Color.white : Color.black).opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.primary.opacity(0.08), lineWidth: 1))
+    }
+
+    @ViewBuilder private func section(_ title: String, _ items: [Agent], base: Int) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
                 Text(title.uppercased())
@@ -227,13 +321,17 @@ struct ContentView: View {
             }
             .padding(.horizontal, 6)
             LazyVGrid(columns: columns, spacing: 18) {
-                ForEach(items) { agent in tile(agent) }
+                ForEach(Array(items.enumerated()), id: \.element.id) { i, agent in
+                    tile(agent, index: base + i)
+                }
             }
         }
     }
 
-    private func tile(_ agent: Agent) -> some View {
-        AgentTile(agent: agent, logos: logos, pinned: usage.isPinned(agent.name)) { tapped in
+    private func tile(_ agent: Agent, index: Int) -> some View {
+        AgentTile(agent: agent, logos: logos,
+                  pinned: usage.isPinned(agent.name),
+                  selected: query.isEmpty && index == selection) { tapped in
             if tapped.variants.count <= 1 {
                 tapped.variants.first.map { run(tapped, $0.command) }
             } else { popoverAgent = tapped }
@@ -243,6 +341,18 @@ struct ContentView: View {
                 usage.togglePin(agent.name)
             }
             if let v = agent.variants.first {
+                Button("Run in Folder…") { pickFolderAndRun(agent, v.command) }
+                if !usage.recentDirs.isEmpty {
+                    Menu("Recent Folders") {
+                        ForEach(usage.recentDirs, id: \.self) { dir in
+                            Button((dir as NSString).abbreviatingWithTildeInPath) {
+                                usage.addRecentDir(dir); run(agent, v.command, cwd: dir)
+                            }
+                        }
+                    }
+                }
+                Divider()
+                Button("Quick Help (--help)") { showHelp(agent) }
                 Button("Copy command") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(v.command, forType: .string)
@@ -260,13 +370,22 @@ struct ContentView: View {
 
     // MARK: actions
 
-    private func move(_ d: Int) {
-        guard !results.isEmpty else { return }
-        selection = max(0, min(results.count - 1, selection + d))
+    private func selectStep(_ d: Int) {   // left/right (or list up/down)
+        let count = query.isEmpty ? gridAgents.count : results.count
+        guard count > 0 else { return }
+        selection = max(0, min(count - 1, selection + d))
+    }
+
+    private func selectRow(_ d: Int) {    // up/down
+        if query.isEmpty {
+            let count = gridAgents.count
+            guard count > 0 else { return }
+            selection = max(0, min(count - 1, selection + d * gridCols))
+        } else { selectStep(d) }
     }
 
     private func launchSelected() {
-        let list = results
+        let list = query.isEmpty ? gridAgents : results
         guard list.indices.contains(selection), let v = list[selection].variants.first else { return }
         run(list[selection], v.command)
     }
@@ -332,6 +451,7 @@ struct AgentTile: View {
     let agent: Agent
     @ObservedObject var logos: LogoStore
     var pinned: Bool = false
+    var selected: Bool = false
     let onTap: (Agent) -> Void
     @State private var hover = false
     @Environment(\.colorScheme) private var scheme
@@ -367,7 +487,11 @@ struct AgentTile: View {
             .padding(.top, 12).padding(.bottom, 10)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill((scheme == .dark ? Color.white : Color.black).opacity(hover ? 0.07 : 0))
+                    .fill((scheme == .dark ? Color.white : Color.black).opacity(hover || selected ? 0.07 : 0))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(agent.swiftColor.opacity(selected ? 0.9 : 0), lineWidth: 2)
             )
             .offset(y: hover ? -3 : 0)
             .scaleEffect(hover ? 1.04 : 1.0)
@@ -489,6 +613,31 @@ extension View {
             self.glassEffect(.regular.tint(tint.opacity(0.22)),
                              in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         } else { self }
+    }
+}
+
+struct HelpSheet: View {
+    let title: String
+    let text: String
+    let onDone: () -> Void
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("\(title) — help").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Button("Done", action: onDone).keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            Divider()
+            ScrollView {
+                Text(text)
+                    .font(.system(size: 11.5, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+            }
+        }
+        .frame(width: 560, height: 460)
     }
 }
 

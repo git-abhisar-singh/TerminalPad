@@ -63,6 +63,15 @@ enum ConfigStore {
         }
     }
 
+    static func save(_ agents: [Agent]) {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let data = try? enc.encode(AgentConfig(agents: agents)) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try? data.write(to: file)
+        }
+    }
+
     /// Force-rewrite defaults (used when upgrading the schema).
     static func reseed() {
         let enc = JSONEncoder()
