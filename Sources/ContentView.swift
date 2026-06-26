@@ -229,18 +229,26 @@ struct ContentView: View {
             let ags = sortedByUse(curated)
             let tools = showDiscovered ? sortedByUse(discovered) : []
             GeometryReader { geo in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        if !seenOnboarding { onboardingCard }
-                        if !favs.isEmpty { section("Favorites", favs, base: 0) }
-                        section("Agents", ags, base: favs.count)
-                        if !tools.isEmpty { section("Tools", tools, base: favs.count + ags.count) }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            if !seenOnboarding { onboardingCard }
+                            if !favs.isEmpty { section("Favorites", favs, base: 0) }
+                            section("Agents", ags, base: favs.count)
+                            if !tools.isEmpty { section("Tools", tools, base: favs.count + ags.count) }
+                        }
+                        .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
+                    .bottomFade()
+                    .onChange(of: geo.size.width) { _, w in updateCols(w) }
+                    .onAppear { updateCols(geo.size.width) }
+                    .onChange(of: selection) { _, s in
+                        guard gridAgents.indices.contains(s) else { return }
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            proxy.scrollTo(gridAgents[s].id, anchor: .center)
+                        }
+                    }
                 }
-                .bottomFade()
-                .onChange(of: geo.size.width) { _, w in updateCols(w) }
-                .onAppear { updateCols(geo.size.width) }
             }
         } else if results.isEmpty {
             VStack(spacing: 10) {
@@ -333,7 +341,7 @@ struct ContentView: View {
                   pinned: usage.isPinned(agent.name),
                   selected: query.isEmpty && index == selection) { tapped in
             if tapped.variants.count <= 1 {
-                tapped.variants.first.map { run(tapped, $0.command) }
+                tapped.variants.first.map { run(tapped, $0.command, cwd: $0.cwd) }
             } else { popoverAgent = tapped }
         }
         .contextMenu {
@@ -363,7 +371,7 @@ struct ContentView: View {
             get: { popoverAgent == agent },
             set: { if !$0 { popoverAgent = nil } })) {
             VariantPicker(agent: agent, logos: logos) { v in
-                popoverAgent = nil; run(agent, v.command)
+                popoverAgent = nil; run(agent, v.command, cwd: v.cwd)
             }
         }
     }
@@ -387,7 +395,7 @@ struct ContentView: View {
     private func launchSelected() {
         let list = query.isEmpty ? gridAgents : results
         guard list.indices.contains(selection), let v = list[selection].variants.first else { return }
-        run(list[selection], v.command)
+        run(list[selection], v.command, cwd: v.cwd)
     }
 
     private func reload() {

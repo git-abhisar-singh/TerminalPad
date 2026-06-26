@@ -42,6 +42,7 @@ struct SettingsView: View {
     @State private var newAlias = ""
     @State private var newColor = "#5B8DEF"
     @State private var updateStatus = ""
+    @State private var agents: [Agent] = ConfigStore.load()
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -75,9 +76,31 @@ struct SettingsView: View {
                     Button("Refresh logos") { refreshLogos() }
                     Button("Reset to defaults") { resetConfirm = true }
                         .confirmationDialog("Reset agents.json to defaults?", isPresented: $resetConfirm) {
-                            Button("Reset", role: .destructive) { ConfigStore.reseed(); post() }
+                            Button("Reset", role: .destructive) { ConfigStore.reseed(); agents = ConfigStore.load(); post() }
                         }
                 }
+            }
+            Section("Agents") {
+                ForEach($agents) { $agent in
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 8) {
+                            TextField("Name", text: $agent.name)
+                            TextField("#color", text: $agent.color).frame(width: 76)
+                            Button { moveUp(agent.id) } label: { Image(systemName: "chevron.up") }
+                                .buttonStyle(.borderless)
+                            Button { moveDown(agent.id) } label: { Image(systemName: "chevron.down") }
+                                .buttonStyle(.borderless)
+                            Button(role: .destructive) { agents.removeAll { $0.id == agent.id } } label: {
+                                Image(systemName: "trash")
+                            }.buttonStyle(.borderless)
+                        }
+                        if !agent.variants.isEmpty {
+                            TextField("Command", text: $agent.variants[0].command)
+                                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                Button("Save Changes") { saveAgents() }
             }
             Section("Add Agent") {
                 TextField("Name", text: $newName)
@@ -111,7 +134,6 @@ struct SettingsView: View {
         let name = newName.trimmingCharacters(in: .whitespaces)
         let cmd = newCommand.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty, !cmd.isEmpty else { return }
-        var agents = ConfigStore.load()
         let aliases = newAlias.split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let color = newColor.hasPrefix("#") ? newColor : "#5B8DEF"
@@ -120,9 +142,16 @@ struct SettingsView: View {
         agents.append(Agent(name: name, icon: mono, color: color,
                             variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: color)],
                             logo: logoSlug, aliases: aliases))
-        ConfigStore.save(agents)
+        saveAgents()
         newName = ""; newCommand = ""; newAlias = ""; newColor = "#5B8DEF"
-        post()
+    }
+
+    private func saveAgents() { ConfigStore.save(agents); post() }
+    private func moveUp(_ id: UUID) {
+        if let i = agents.firstIndex(where: { $0.id == id }), i > 0 { agents.swapAt(i, i - 1) }
+    }
+    private func moveDown(_ id: UUID) {
+        if let i = agents.firstIndex(where: { $0.id == id }), i < agents.count - 1 { agents.swapAt(i, i + 1) }
     }
 
     private func refreshLogos() {

@@ -7,8 +7,9 @@ struct Variant: Codable, Identifiable, Hashable {
     var command: String
     var icon: String = "terminal"   // SF Symbol name
     var color: String = "#8E8E93"   // hex accent
+    var cwd: String? = nil          // per-mode working directory (overrides agent.cwd)
 
-    enum CodingKeys: String, CodingKey { case label, command, icon, color }
+    enum CodingKeys: String, CodingKey { case label, command, icon, color, cwd }
 
     var swiftColor: Color { Color(hex: color) }
 }
