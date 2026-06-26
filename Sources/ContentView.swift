@@ -118,11 +118,13 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 titleBar
                 if showSettings {
+                    settingsHeader
                     SettingsView()
                         .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .onExitCommand { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } }
+                    Button("") { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } }
+                        .keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0)
                 } else {
-                    searchField
+                    searchRow
                     content
                 }
             }
@@ -148,7 +150,7 @@ struct ContentView: View {
             query = ""; DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .agentpadOpenSettings)) { _ in
-            withAnimation(.easeInOut(duration: 0.2)) { showSettings.toggle() }
+            withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
         }
         .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
             HelpSheet(title: helpTitle, text: helpText ?? "") { helpText = nil }
@@ -171,33 +173,45 @@ struct ContentView: View {
     // Notes-style toolbar: identity by the traffic lights, controls on the right.
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
-        ZStack {
-            Text(showSettings ? "Settings" : "AgentPad")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.primary)        // centred across the full width
-            HStack(spacing: 8) {
-                if showSettings {
-                    Button { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 19, weight: .semibold))
-                            .frame(width: 30, height: 30)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain).foregroundStyle(.primary)
-                    .help("Back")
-                    .padding(.leading, 90)
-                }
-                Spacer()
-                if !showSettings {
-                    headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
-                    headerButton("gearshape", help: "Settings") {
-                        withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
-                    }
-                }
+        // Title only — this region overlaps the draggable titlebar, so NO buttons here.
+        Text(showSettings ? "Settings" : "AgentPad")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)          // matches the unified titlebar; lights centre here
+    }
+
+    // Controls live BELOW the titlebar so clicks aren't eaten by the window-drag region.
+    private var searchRow: some View {
+        HStack(spacing: 10) {
+            searchField
+            headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
+            headerButton("gearshape", help: "Settings") {
+                withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
             }
-            .padding(.trailing, 14)
         }
-        .frame(height: 50)          // matches the unified titlebar; lights centre here
+        .padding(.horizontal, 20)
+        .padding(.bottom, 14)
+    }
+
+    private var settingsHeader: some View {
+        HStack {
+            Button { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 38, height: 38)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+                    .contentShape(RoundedRectangle(cornerRadius: 11))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .help("Back")
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
     }
 
     private var searchField: some View {
@@ -225,9 +239,6 @@ struct ContentView: View {
                     in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder((isDark ? Color.white : Color.black).opacity(0.06), lineWidth: 1))
-        .padding(.horizontal, 20)
-        .padding(.top, 6)
-        .padding(.bottom, 14)
     }
 
     private func headerButton(_ symbol: String, help: String = "", action: @escaping () -> Void) -> some View {
