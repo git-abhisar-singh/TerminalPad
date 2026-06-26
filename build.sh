@@ -23,12 +23,13 @@ swiftc \
 echo "==> Installing Info.plist"
 cp "$ROOT/Info.plist" "$APP/Contents/Info.plist"
 
-echo "==> Bundling logos"
+echo "==> Bundling resources"
 if [ -d "$ROOT/Resources/logos" ]; then
     mkdir -p "$RES/logos"
     cp "$ROOT/Resources/logos/"*.png "$RES/logos/" 2>/dev/null || true
     echo "    $(ls "$RES/logos" | wc -l | tr -d ' ') logos"
 fi
+cp "$ROOT/Resources/"*.png "$RES/" 2>/dev/null || true
 
 # Optional custom icon: if AppIcon.icns exists, bundle it.
 if [ -f "$ROOT/AppIcon.icns" ]; then

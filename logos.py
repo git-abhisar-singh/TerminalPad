@@ -57,7 +57,7 @@ def rasterize(svg_bytes, out_png):
         svg = os.path.join(td, "i.svg")
         with open(svg, "wb") as f:
             f.write(svg_bytes)
-        subprocess.run(["qlmanage", "-t", "-s", "1024", "-o", td, svg],
+        subprocess.run(["qlmanage", "-t", "-s", "256", "-o", td, svg],
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         gen = os.path.join(td, "i.svg.png")
         if not os.path.exists(gen):

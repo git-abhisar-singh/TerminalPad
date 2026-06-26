@@ -60,7 +60,7 @@ final class LogoStore: ObservableObject {
         // rasterize black-on-white via QuickLook
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/qlmanage")
-        p.arguments = ["-t", "-s", "512", "-o", tmp.path, svgURL.path]
+        p.arguments = ["-t", "-s", "256", "-o", tmp.path, svgURL.path]
         p.standardOutput = Pipe(); p.standardError = Pipe()
         try? p.run(); p.waitUntilExit()
 

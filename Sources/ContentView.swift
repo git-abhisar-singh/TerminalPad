@@ -8,10 +8,17 @@ struct ContentView: View {
     @State private var selection = 0
     @State private var popoverAgent: Agent? = nil
     @FocusState private var searchFocused: Bool
+    @AppStorage("showDiscovered") private var showDiscovered = true
+    @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
 
     private let columns = [GridItem(.adaptive(minimum: 138, maximum: 164), spacing: 26)]
 
-    private var all: [Agent] { curated + discovered }
+    private var all: [Agent] { showDiscovered ? curated + discovered : curated }
+
+    private func launch(_ command: String) {
+        Launcher.launch(command)
+        if quitAfterLaunch { NSApp.keyWindow?.close() }
+    }
 
     private func score(_ a: Agent, _ q: String) -> Int {
         let n = a.name.lowercased()
@@ -40,20 +47,25 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            GlassBackground().ignoresSafeArea()
-            Color.black.opacity(0.12).ignoresSafeArea()
-
+            GlassBackground()
+            Color.black.opacity(0.10)
             VStack(spacing: 0) {
                 searchBar
                 Divider().opacity(0.12)
                 content
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .strokeBorder(.white.opacity(0.12), lineWidth: 1))
+        .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 560)
         .preferredColorScheme(.dark)
         .task { await loadDiscovered() }
         .onChange(of: query) { _, _ in selection = 0 }
         .onAppear { DispatchQueue.main.async { searchFocused = true } }
+        .onReceive(NotificationCenter.default.publisher(for: .agentpadReload)) { _ in reload() }
     }
 
     // MARK: search
@@ -91,14 +103,14 @@ struct ContentView: View {
                     ForEach(all) { agent in
                         AgentTile(agent: agent, logos: logos) { tapped in
                             if tapped.variants.count <= 1 {
-                                tapped.variants.first.map { Launcher.launch($0.command) }
+                                tapped.variants.first.map { launch($0.command) }
                             } else { popoverAgent = tapped }
                         }
                         .popover(isPresented: Binding(
                             get: { popoverAgent == agent },
                             set: { if !$0 { popoverAgent = nil } })) {
                             VariantPicker(agent: agent, logos: logos) { v in
-                                popoverAgent = nil; Launcher.launch(v.command)
+                                popoverAgent = nil; launch(v.command)
                             }
                         }
                     }
@@ -141,8 +153,7 @@ struct ContentView: View {
     private func launchSelected() {
         let list = results
         guard list.indices.contains(selection), let v = list[selection].variants.first else { return }
-        Launcher.launch(v.command)
-        NSApp.keyWindow?.close()
+        launch(v.command)
     }
 
     private func reload() {
@@ -317,7 +328,7 @@ struct VariantRow: View {
 extension View {
     @ViewBuilder func iconGlass(tint: Color) -> some View {
         if #available(macOS 26.0, *) {
-            self.glassEffect(.regular.tint(tint.opacity(0.22)).interactive(),
+            self.glassEffect(.regular.tint(tint.opacity(0.22)),
                              in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         } else { self }
     }
@@ -330,6 +341,11 @@ struct GlassBackground: NSViewRepresentable {
         v.blendingMode = .behindWindow
         v.state = .active
         v.appearance = NSAppearance(named: .vibrantDark)
+        v.wantsLayer = true
+        v.layer?.cornerRadius = 24
+        v.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
+                                  .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        v.layer?.masksToBounds = true
         return v
     }
     func updateNSView(_ v: NSVisualEffectView, context: Context) {}

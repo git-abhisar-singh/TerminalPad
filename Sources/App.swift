@@ -6,13 +6,22 @@ struct AgentPadApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     var body: some Scene {
-        WindowGroup("AgentPad") {
+        WindowGroup(id: "main") {
             ContentView()
                 .background(WindowConfigurator())
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 880, height: 620)
+
+        Settings { SettingsView() }
+
+        MenuBarExtra {
+            MenuBarContent()
+        } label: {
+            if let img = AppImages.menubar { Image(nsImage: img) }
+            else { Image(systemName: "command") }
+        }
     }
 }
 
@@ -21,7 +30,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
     }
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    // Stay alive in the menu bar after the window closes.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 }
 
 /// Makes the host NSWindow a transparent, glassy, Spotlight-style panel.
