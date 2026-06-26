@@ -1,0 +1,12 @@
+# Build output
+AgentPad.app/
+AppIcon.iconset/
+*.original.md
+# (icon-preview.png is kept — used in README)
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
