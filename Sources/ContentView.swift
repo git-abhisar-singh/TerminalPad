@@ -108,14 +108,17 @@ struct ContentView: View {
     // Notes-style toolbar: identity by the traffic lights, controls on the right.
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
-        HStack(spacing: 8) {
-            Text("AgentPad").font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary)
-            Spacer()
-            headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
-            headerButton("gearshape", help: "Settings") { showSettings = true }
+        ZStack {
+            Text("AgentPad")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.primary)        // centred across the full width
+            HStack(spacing: 8) {
+                Spacer()
+                headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
+                headerButton("gearshape", help: "Settings") { showSettings = true }
+            }
+            .padding(.trailing, 14)
         }
-        .padding(.leading, 78)      // clear the traffic-light buttons
-        .padding(.trailing, 14)
         .frame(height: 50)          // matches the unified titlebar; lights centre here
     }
 
