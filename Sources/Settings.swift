@@ -17,6 +17,13 @@ enum AppImages {
         img.size = NSSize(width: 18, height: 18)
         return img
     }()
+
+    /// Full-colour app icon (multi-resolution .icns) — crisp at any size.
+    static let appIcon: NSImage? = {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let img = NSImage(contentsOf: url) { return img }
+        return NSApp.applicationIconImage
+    }()
 }
 
 // MARK: - Settings window
