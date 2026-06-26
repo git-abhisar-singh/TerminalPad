@@ -17,6 +17,7 @@ swiftc \
     -parse-as-library \
     -framework SwiftUI \
     -framework AppKit \
+    -framework Carbon \
     -o "$MACOS/AgentPad" \
     "$ROOT"/Sources/*.swift
 

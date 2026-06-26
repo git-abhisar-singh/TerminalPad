@@ -19,7 +19,7 @@ struct ContentView: View {
 
     private func launch(_ command: String) {
         Launcher.launch(command)
-        if quitAfterLaunch { NSApp.keyWindow?.close() }
+        if quitAfterLaunch { NSApp.hide(nil) }   // keep window alive; just dismiss (Spotlight-style)
     }
 
     private func score(_ a: Agent, _ q: String) -> Int {
@@ -50,10 +50,12 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if glassBlur {
-                GlassBackground()                       // live desktop blur (heavier on WindowServer)
-                Color.black.opacity(0.10)
+                GlassBackground()   // live desktop blur
+                // dark Control-Center-style tint, darker toward the bottom
+                LinearGradient(colors: [Color.black.opacity(0.34), Color.black.opacity(0.5)],
+                               startPoint: .top, endPoint: .bottom)
             } else {
-                LinearGradient(colors: [Color(white: 0.13), Color(white: 0.05)],
+                LinearGradient(colors: [Color(white: 0.12), Color(white: 0.04)],
                                startPoint: .top, endPoint: .bottom)  // opaque dark panel — cheap to composite
             }
             VStack(spacing: 0) {
@@ -75,6 +77,15 @@ struct ContentView: View {
             DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .agentpadReload)) { _ in reload() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            DispatchQueue.main.async { searchFocused = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .agentpadFocusSearch)) { _ in
+            query = ""; DispatchQueue.main.async { searchFocused = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .agentpadOpenSettings)) { _ in
+            showSettings = true
+        }
         .sheet(isPresented: $showSettings) {
             SettingsSheet { showSettings = false }
         }
@@ -94,7 +105,7 @@ struct ContentView: View {
                 .onSubmit(launchSelected)
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow)   { move(-1); return .handled }
-                .onKeyPress(.escape)    { if query.isEmpty { NSApp.keyWindow?.close() } else { query = "" }; return .handled }
+                .onKeyPress(.escape)    { if query.isEmpty { NSApp.hide(nil) } else { query = "" }; return .handled }
             if !query.isEmpty {
                 headerButton("xmark.circle.fill") { query = "" }
             }
@@ -124,23 +135,13 @@ struct ContentView: View {
     @ViewBuilder private var content: some View {
         if query.isEmpty {
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 28) {
-                    ForEach(all) { agent in
-                        AgentTile(agent: agent, logos: logos) { tapped in
-                            if tapped.variants.count <= 1 {
-                                tapped.variants.first.map { launch($0.command) }
-                            } else { popoverAgent = tapped }
-                        }
-                        .popover(isPresented: Binding(
-                            get: { popoverAgent == agent },
-                            set: { if !$0 { popoverAgent = nil } })) {
-                            VariantPicker(agent: agent, logos: logos) { v in
-                                popoverAgent = nil; launch(v.command)
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 26) {
+                    section("Agents", curated)
+                    if showDiscovered && !discovered.isEmpty {
+                        section("Tools", discovered)
                     }
                 }
-                .padding(.horizontal, 34).padding(.top, 22).padding(.bottom, 40)
+                .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
             }
             .bottomFade()
         } else if results.isEmpty {
@@ -166,6 +167,34 @@ struct ContentView: View {
                 }
                 .bottomFade()
                 .onChange(of: selection) { _, s in withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(s, anchor: .center) } }
+            }
+        }
+    }
+
+    @ViewBuilder private func section(_ title: String, _ items: [Agent]) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.8)
+                .foregroundStyle(.white.opacity(0.38))
+                .padding(.leading, 6)
+            LazyVGrid(columns: columns, spacing: 24) {
+                ForEach(items) { agent in tile(agent) }
+            }
+        }
+    }
+
+    private func tile(_ agent: Agent) -> some View {
+        AgentTile(agent: agent, logos: logos) { tapped in
+            if tapped.variants.count <= 1 {
+                tapped.variants.first.map { launch($0.command) }
+            } else { popoverAgent = tapped }
+        }
+        .popover(isPresented: Binding(
+            get: { popoverAgent == agent },
+            set: { if !$0 { popoverAgent = nil } })) {
+            VariantPicker(agent: agent, logos: logos) { v in
+                popoverAgent = nil; launch(v.command)
             }
         }
     }
@@ -219,7 +248,7 @@ struct AgentIcon: View {
                     .padding(size * 0.24)
             } else {
                 Text(agent.icon)
-                    .font(.system(size: size * 0.34, weight: .bold, design: .rounded))
+                    .font(.system(size: size * 0.32, weight: .semibold))
                     .foregroundStyle(.white)
             }
         }

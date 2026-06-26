@@ -4,6 +4,8 @@ import ServiceManagement
 
 extension Notification.Name {
     static let agentpadReload = Notification.Name("agentpadReload")
+    static let agentpadFocusSearch = Notification.Name("agentpadFocusSearch")
+    static let agentpadOpenSettings = Notification.Name("agentpadOpenSettings")
 }
 
 enum AppImages {
@@ -95,22 +97,3 @@ struct SettingsSheet: View {
     }
 }
 
-// MARK: - Menu bar dropdown
-
-struct MenuBarContent: View {
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some View {
-        let agents = ConfigStore.load()
-        Button("Open AgentPad") { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
-        Divider()
-        ForEach(agents) { agent in
-            if let v = agent.variants.first {
-                Button("\(agent.name) — \(v.label)") { Launcher.launch(v.command) }
-            }
-        }
-        Divider()
-        SettingsLink { Text("Settings…") }
-        Button("Quit") { NSApp.terminate(nil) }
-    }
-}
