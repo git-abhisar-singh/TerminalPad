@@ -24,6 +24,7 @@ struct SettingsView: View {
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("launchAtLogin") private var launchAtLogin = false
+    @AppStorage("glassBlur") private var glassBlur = false
     @State private var resetConfirm = false
 
     var body: some View {
@@ -33,6 +34,11 @@ struct SettingsView: View {
                     ForEach(TerminalApp.allCases) { Text($0.rawValue).tag($0.rawValue) }
                 }
                 Toggle("Quit AgentPad after launching", isOn: $quitAfterLaunch)
+            }
+            Section("Appearance") {
+                Toggle("Glass blur background", isOn: $glassBlur)
+                Text("Off = smooth dark panel (recommended). On = live desktop blur — prettier, heavier on the GPU.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Library") {
                 Toggle("Show discovered CLI tools", isOn: $showDiscovered)

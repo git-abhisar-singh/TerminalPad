@@ -10,6 +10,7 @@ struct ContentView: View {
     @FocusState private var searchFocused: Bool
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
+    @AppStorage("glassBlur") private var glassBlur = false
 
     private let columns = [GridItem(.adaptive(minimum: 138, maximum: 164), spacing: 26)]
 
@@ -47,8 +48,13 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            GlassBackground()
-            Color.black.opacity(0.10)
+            if glassBlur {
+                GlassBackground()                       // live desktop blur (heavier on WindowServer)
+                Color.black.opacity(0.10)
+            } else {
+                LinearGradient(colors: [Color(white: 0.13), Color(white: 0.05)],
+                               startPoint: .top, endPoint: .bottom)  // opaque dark panel — cheap to composite
+            }
             VStack(spacing: 0) {
                 searchBar
                 Divider().opacity(0.12)
@@ -56,7 +62,6 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
             .strokeBorder(.white.opacity(0.12), lineWidth: 1))
         .ignoresSafeArea()
@@ -64,7 +69,10 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .task { await loadDiscovered() }
         .onChange(of: query) { _, _ in selection = 0 }
-        .onAppear { DispatchQueue.main.async { searchFocused = true } }
+        .onAppear {
+            logos.preload(curated.compactMap { $0.logo })
+            DispatchQueue.main.async { searchFocused = true }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .agentpadReload)) { _ in reload() }
     }
 
@@ -167,7 +175,10 @@ struct ContentView: View {
         let found = await Task.detached(priority: .userInitiated) {
             Discovery.tools(excluding: curatedCmds)
         }.value
-        await MainActor.run { discovered = found }
+        await MainActor.run {
+            discovered = found
+            logos.preload(found.compactMap { $0.logo })
+        }
     }
 }
 
@@ -184,10 +195,9 @@ struct AgentIcon: View {
                 .fill(agent.swiftColor.opacity(0.78).gradient)
             RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
                 .stroke(.white.opacity(0.16), lineWidth: 1)
-            if let img = logos.image(for: agent.logo) {
+            if let img = logos.image(agent.logo) {
                 Image(nsImage: img).resizable().scaledToFit()
                     .padding(size * 0.24)
-                    .shadow(color: .black.opacity(0.25), radius: 2, y: 1)
             } else {
                 Text(agent.icon)
                     .font(.system(size: size * 0.34, weight: .bold, design: .rounded))
@@ -195,7 +205,6 @@ struct AgentIcon: View {
             }
         }
         .frame(width: size, height: size)
-        .iconGlass(tint: agent.swiftColor)
     }
 }
 
@@ -211,7 +220,6 @@ struct AgentTile: View {
         Button { onTap(agent) } label: {
             VStack(spacing: 11) {
                 AgentIcon(agent: agent, logos: logos, size: 94)
-                    .shadow(color: agent.swiftColor.opacity(hover ? 0.5 : 0.28), radius: hover ? 17 : 9, y: 5)
                     .scaleEffect(hover ? 1.06 : 1.0)
                 VStack(spacing: 2) {
                     Text(agent.name)

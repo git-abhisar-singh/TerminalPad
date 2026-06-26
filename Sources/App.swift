@@ -48,6 +48,10 @@ struct WindowConfigurator: NSViewRepresentable {
             win.isMovableByWindowBackground = true
             win.standardWindowButton(.closeButton)?.superview?.alphaValue = 0.55
             win.appearance = NSAppearance(named: .vibrantDark)
+            // Round at the layer level (compositor) — avoids a SwiftUI full-window clip pass.
+            win.contentView?.wantsLayer = true
+            win.contentView?.layer?.cornerRadius = 24
+            win.contentView?.layer?.masksToBounds = true
         }
         return v
     }
