@@ -350,6 +350,9 @@ struct AgentTile: View {
                                 .offset(x: 7, y: -7)
                         }
                     }
+                    // glow only on the hovered tile (1 tile = cheap, no scroll lag)
+                    .shadow(color: agent.swiftColor.opacity(hover ? 0.55 : 0),
+                            radius: hover ? 18 : 0, y: 5)
                 VStack(spacing: 2) {
                     Text(agent.name)
                         .font(.system(size: 13, weight: .semibold))
