@@ -112,8 +112,13 @@ struct WindowConfigurator: NSViewRepresentable {
             win.titleVisibility = .hidden
             win.styleMask.insert(.fullSizeContentView)
             win.isMovableByWindowBackground = true
-            win.standardWindowButton(.closeButton)?.superview?.alphaValue = 0.85
             win.setFrameAutosaveName("AgentPadMainWindow")   // remember size/position
+            // Unified toolbar makes the titlebar taller so the traffic lights
+            // sit lower with breathing room (and the system keeps them centred).
+            let tb = NSToolbar(identifier: "ap.toolbar")
+            tb.showsBaselineSeparator = false
+            win.toolbar = tb
+            win.toolbarStyle = .unified
             win.invalidateShadow()
         }
         return v

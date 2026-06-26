@@ -120,7 +120,7 @@ struct ContentView: View {
         }
         .padding(.leading, 78)      // clear the traffic-light buttons
         .padding(.trailing, 14)
-        .frame(height: 38)          // standard-toolbar height; lights centre here
+        .frame(height: 50)          // matches the unified titlebar; lights centre here
     }
 
     private var searchField: some View {
