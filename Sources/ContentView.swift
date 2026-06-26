@@ -106,8 +106,9 @@ struct ContentView: View {
     // MARK: search
 
     // Notes-style toolbar: identity by the traffic lights, controls on the right.
+    // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 8) {
             if let logo = AppImages.menubar {
                 Image(nsImage: logo).renderingMode(.template).resizable().scaledToFit()
                     .frame(width: 15, height: 15).foregroundStyle(.primary)
@@ -117,11 +118,9 @@ struct ContentView: View {
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") { showSettings = true }
         }
-        .frame(height: 26)
-        .padding(.leading, 82)      // clear the traffic-light buttons
-        .padding(.trailing, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 10)
+        .padding(.leading, 78)      // clear the traffic-light buttons
+        .padding(.trailing, 14)
+        .frame(height: 38)          // standard-toolbar height; lights centre here
     }
 
     private var searchField: some View {
@@ -148,6 +147,7 @@ struct ContentView: View {
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder((isDark ? Color.white : Color.black).opacity(0.06), lineWidth: 1))
         .padding(.horizontal, 20)
+        .padding(.top, 6)
         .padding(.bottom, 14)
     }
 
@@ -324,8 +324,6 @@ struct AgentIcon: View {
             }
         }
         .frame(width: size, height: size)
-        .shadow(color: dark ? agent.swiftColor.opacity(0.32) : Color.black.opacity(0.14),
-                radius: size * (dark ? 0.12 : 0.07), y: size * 0.045)
     }
 }
 
