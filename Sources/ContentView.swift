@@ -109,11 +109,7 @@ struct ContentView: View {
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
         HStack(spacing: 8) {
-            if let icon = AppImages.appIcon {
-                Image(nsImage: icon).resizable().scaledToFit()
-                    .frame(width: 19, height: 19)
-            }
-            Text("AgentPad").font(.system(size: 13.5, weight: .semibold)).foregroundStyle(.primary)
+            Text("AgentPad").font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary)
             Spacer()
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") { showSettings = true }
