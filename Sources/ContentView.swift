@@ -24,7 +24,7 @@ struct ContentView: View {
         switch appearance { case "light": return .light; case "dark": return .dark; default: return nil }
     }
 
-    private let columns = [GridItem(.adaptive(minimum: 138, maximum: 164), spacing: 26)]
+    private let columns = [GridItem(.adaptive(minimum: 130, maximum: 156), spacing: 18)]
 
     private var all: [Agent] { showDiscovered ? curated + discovered : curated }
 
@@ -117,9 +117,10 @@ struct ContentView: View {
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") { showSettings = true }
         }
-        .padding(.leading, 84)      // clear the traffic-light buttons
-        .padding(.trailing, 18)
-        .padding(.top, 15)
+        .frame(height: 26)
+        .padding(.leading, 82)      // clear the traffic-light buttons
+        .padding(.trailing, 16)
+        .padding(.top, 16)
         .padding(.bottom, 10)
     }
 
@@ -192,7 +193,7 @@ struct ContentView: View {
                     LazyVStack(spacing: 4) {
                         ForEach(Array(results.enumerated()), id: \.element.id) { i, agent in
                             ResultRow(agent: agent, logos: logos, selected: i == selection)
-                                .id(i)
+                                .id(agent.id)
                                 .onTapGesture { selection = i; launchSelected() }
                                 .onHover { if $0 { selection = i } }
                         }
@@ -200,7 +201,10 @@ struct ContentView: View {
                     .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
                 }
                 .bottomFade()
-                .onChange(of: selection) { _, s in withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(s, anchor: .center) } }
+                .onChange(of: selection) { _, s in
+                    guard results.indices.contains(s) else { return }
+                    withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(results[s].id, anchor: .center) }
+                }
             }
         }
     }
@@ -213,13 +217,17 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func section(_ title: String, _ items: [Agent]) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.8)
-                .foregroundStyle(.secondary)
-                .padding(.leading, 6)
-            LazyVGrid(columns: columns, spacing: 24) {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .semibold)).tracking(0.9)
+                    .foregroundStyle(.secondary)
+                Rectangle()
+                    .fill((isDark ? Color.white : Color.black).opacity(0.08))
+                    .frame(height: 1)
+            }
+            .padding(.horizontal, 6)
+            LazyVGrid(columns: columns, spacing: 18) {
                 ForEach(items) { agent in tile(agent) }
             }
         }
@@ -316,6 +324,8 @@ struct AgentIcon: View {
             }
         }
         .frame(width: size, height: size)
+        .shadow(color: dark ? agent.swiftColor.opacity(0.32) : Color.black.opacity(0.14),
+                radius: size * (dark ? 0.12 : 0.07), y: size * 0.045)
     }
 }
 
@@ -327,11 +337,12 @@ struct AgentTile: View {
     var pinned: Bool = false
     let onTap: (Agent) -> Void
     @State private var hover = false
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Button { onTap(agent) } label: {
             VStack(spacing: 11) {
-                AgentIcon(agent: agent, logos: logos, size: 94)
+                AgentIcon(agent: agent, logos: logos, size: 92)
                     .overlay(alignment: .topTrailing) {
                         if pinned {
                             Image(systemName: "star.fill")
@@ -342,7 +353,6 @@ struct AgentTile: View {
                                 .offset(x: 7, y: -7)
                         }
                     }
-                    .scaleEffect(hover ? 1.06 : 1.0)
                 VStack(spacing: 2) {
                     Text(agent.name)
                         .font(.system(size: 13, weight: .semibold))
@@ -353,11 +363,18 @@ struct AgentTile: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 138)
+            .frame(width: 132)
+            .padding(.top, 12).padding(.bottom, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill((scheme == .dark ? Color.white : Color.black).opacity(hover ? 0.07 : 0))
+            )
+            .offset(y: hover ? -3 : 0)
+            .scaleEffect(hover ? 1.04 : 1.0)
         }
         .buttonStyle(.plain)
         .onHover { hover = $0 }
-        .animation(.spring(response: 0.26, dampingFraction: 0.68), value: hover)
+        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: hover)
     }
 }
 
