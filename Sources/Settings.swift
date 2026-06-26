@@ -134,7 +134,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 560)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func addAgent() {
@@ -195,22 +196,4 @@ struct SettingsView: View {
     }
 }
 
-/// In-app Settings presented as a sheet (gear button in the header).
-struct SettingsSheet: View {
-    let onDone: () -> Void
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Settings").font(.system(size: 15, weight: .semibold))
-                Spacer()
-                Button("Done", action: onDone).keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, 18).padding(.vertical, 12)
-            Divider()
-            SettingsView()
-        }
-        .frame(width: 460)
-        .preferredColorScheme(.dark)
-    }
-}
 

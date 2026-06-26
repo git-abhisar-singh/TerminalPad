@@ -117,8 +117,14 @@ struct ContentView: View {
             }
             VStack(spacing: 0) {
                 titleBar
-                searchField
-                content
+                if showSettings {
+                    SettingsView()
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .onExitCommand { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } }
+                } else {
+                    searchField
+                    content
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -127,6 +133,9 @@ struct ContentView: View {
         .preferredColorScheme(scheme)
         .task { if rescanOnLaunch { await loadDiscovered() } }
         .onChange(of: query) { _, _ in selection = 0 }
+        .onChange(of: showSettings) { _, s in
+            if !s { DispatchQueue.main.async { searchFocused = true } }
+        }
         .onAppear {
             logos.preload(curated.compactMap { $0.logo })
             DispatchQueue.main.async { searchFocused = true }
@@ -139,10 +148,7 @@ struct ContentView: View {
             query = ""; DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .agentpadOpenSettings)) { _ in
-            showSettings = true
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsSheet { showSettings = false }
+            withAnimation(.easeInOut(duration: 0.2)) { showSettings.toggle() }
         }
         .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
             HelpSheet(title: helpTitle, text: helpText ?? "") { helpText = nil }
@@ -166,13 +172,27 @@ struct ContentView: View {
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
         ZStack {
-            Text("AgentPad")
+            Text(showSettings ? "Settings" : "AgentPad")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.primary)        // centred across the full width
             HStack(spacing: 8) {
+                if showSettings {
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } } label: {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                            Text("Back").font(.system(size: 13))
+                        }
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.primary)
+                    .padding(.leading, 78)
+                }
                 Spacer()
-                headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
-                headerButton("gearshape", help: "Settings") { showSettings = true }
+                if !showSettings {
+                    headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
+                    headerButton("gearshape", help: "Settings") {
+                        withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
+                    }
+                }
             }
             .padding(.trailing, 14)
         }
