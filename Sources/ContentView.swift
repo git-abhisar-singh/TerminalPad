@@ -73,14 +73,12 @@ struct ContentView: View {
                                startPoint: .top, endPoint: .bottom)
             }
             VStack(spacing: 0) {
-                searchBar
-                Divider().opacity(0.12)
+                titleBar
+                searchField
                 content
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .strokeBorder((isDark ? Color.white : Color.black).opacity(0.12), lineWidth: 1))
         .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 560)
         .preferredColorScheme(scheme)
@@ -107,36 +105,48 @@ struct ContentView: View {
 
     // MARK: search
 
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            // App identity beside the traffic lights (Notes-style)
+    // Notes-style toolbar: identity by the traffic lights, controls on the right.
+    private var titleBar: some View {
+        HStack(spacing: 9) {
             if let logo = AppImages.menubar {
                 Image(nsImage: logo).renderingMode(.template).resizable().scaledToFit()
                     .frame(width: 15, height: 15).foregroundStyle(.primary)
             }
             Text("AgentPad").font(.system(size: 13.5, weight: .semibold)).foregroundStyle(.primary)
-            Divider().frame(height: 16).padding(.horizontal, 4)
+            Spacer()
+            headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
+            headerButton("gearshape", help: "Settings") { showSettings = true }
+        }
+        .padding(.leading, 84)      // clear the traffic-light buttons
+        .padding(.trailing, 18)
+        .padding(.top, 15)
+        .padding(.bottom, 10)
+    }
 
+    private var searchField: some View {
+        HStack(spacing: 9) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
             TextField("Search agents and tools…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 19, weight: .regular))
+                .font(.system(size: 15, weight: .regular))
                 .focused($searchFocused)
                 .onSubmit(launchSelected)
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow)   { move(-1); return .handled }
                 .onKeyPress(.escape)    { if query.isEmpty { NSApp.hide(nil) } else { query = "" }; return .handled }
             if !query.isEmpty {
-                headerButton("xmark.circle.fill") { query = "" }
+                Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
             }
-            headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
-            headerButton("gearshape", help: "Settings") { showSettings = true }
         }
-        .padding(.leading, 84)      // clear the traffic-light buttons
-        .padding(.trailing, 20)
-        .padding(.top, 16)
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background((isDark ? Color.white : Color.black).opacity(0.07),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder((isDark ? Color.white : Color.black).opacity(0.06), lineWidth: 1))
+        .padding(.horizontal, 20)
         .padding(.bottom, 14)
     }
 
@@ -472,9 +482,6 @@ struct GlassBackground: NSViewRepresentable {
         let v = NSVisualEffectView()
         v.blendingMode = .behindWindow
         v.state = .active
-        v.wantsLayer = true
-        v.layer?.cornerRadius = 24
-        v.layer?.masksToBounds = true
         apply(v)
         return v
     }

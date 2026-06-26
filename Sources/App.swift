@@ -112,12 +112,9 @@ struct WindowConfigurator: NSViewRepresentable {
             win.titleVisibility = .hidden
             win.styleMask.insert(.fullSizeContentView)
             win.isMovableByWindowBackground = true
-            win.standardWindowButton(.closeButton)?.superview?.alphaValue = 0.7
-            // Round at the layer level (compositor) — avoids a SwiftUI full-window clip pass.
-            win.contentView?.wantsLayer = true
-            win.contentView?.layer?.cornerRadius = 24
-            win.contentView?.layer?.masksToBounds = true
+            win.standardWindowButton(.closeButton)?.superview?.alphaValue = 0.85
             win.setFrameAutosaveName("AgentPadMainWindow")   // remember size/position
+            win.invalidateShadow()
         }
         return v
     }
