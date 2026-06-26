@@ -36,6 +36,7 @@ struct SettingsView: View {
     @AppStorage("glassBlur") private var glassBlur = true
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("rescanOnLaunch") private var rescanOnLaunch = true
+    @AppStorage("hapticLevel") private var hapticLevel = "strong"
     @State private var resetConfirm = false
     @State private var newName = ""
     @State private var newCommand = ""
@@ -55,6 +56,12 @@ struct SettingsView: View {
                     ForEach(TerminalApp.allCases) { Text($0.rawValue).tag($0.rawValue) }
                 }
                 Toggle("Quit AgentPad after launching", isOn: $quitAfterLaunch)
+                Picker("Hover haptics", selection: $hapticLevel) {
+                    Text("Off").tag("off")
+                    Text("Light").tag("light")
+                    Text("Medium").tag("medium")
+                    Text("Strong").tag("strong")
+                }
             }
             Section("Appearance") {
                 Picker("Theme", selection: $appearance) {

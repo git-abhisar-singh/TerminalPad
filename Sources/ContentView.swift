@@ -627,10 +627,21 @@ extension View {
     }
 }
 
-/// Subtle haptic tick on Force Touch trackpads (no-op on hardware without haptics).
+/// Haptic tick on Force Touch trackpads (no-op on hardware without haptics).
+/// Strength comes from the "hapticLevel" setting: off / light / medium / strong.
 enum Haptics {
     static func tick() {
-        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+        let level = UserDefaults.standard.string(forKey: "hapticLevel") ?? "strong"
+        let pattern: NSHapticFeedbackManager.FeedbackPattern?
+        switch level {
+        case "off":    pattern = nil
+        case "light":  pattern = .alignment
+        case "medium": pattern = .generic
+        default:       pattern = .levelChange   // strong
+        }
+        if let pattern {
+            NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
+        }
     }
 }
 
