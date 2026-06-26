@@ -7,7 +7,8 @@ enum Discovery {
         return [
             "/opt/homebrew/bin", "/opt/homebrew/sbin",
             "/usr/local/bin", "/usr/local/sbin",
-            "\(home)/.local/bin", "/usr/bin"
+            "\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin",
+            "\(home)/.bun/bin", "/usr/bin"
         ]
     }()
 
@@ -64,10 +65,27 @@ enum Discovery {
             names += run(brew, ["leaves"]).split(whereSeparator: \.isNewline).map(String.init)
         }
 
-        // 2. user-local bins
+        // 2. user-local / language bins (cargo, go, bun, etc.)
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if let local = try? FileManager.default.contentsOfDirectory(atPath: "\(home)/.local/bin") {
-            names += local
+        for dir in ["\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin"] {
+            if let items = try? FileManager.default.contentsOfDirectory(atPath: dir) { names += items }
+        }
+
+        // 3. npm global packages
+        if let npm = ["/opt/homebrew/bin/npm", "/usr/local/bin/npm"]
+            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+            names += run(npm, ["ls", "-g", "--depth=0", "--parseable"])
+                .split(whereSeparator: \.isNewline)
+                .compactMap { $0.split(separator: "/").last.map(String.init) }
+                .filter { $0 != "lib" && !$0.hasPrefix("@") }
+        }
+
+        // 4. pipx apps
+        if let pipx = ["/opt/homebrew/bin/pipx", "\(home)/.local/bin/pipx"]
+            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+            names += run(pipx, ["list", "--short"])
+                .split(whereSeparator: \.isNewline)
+                .compactMap { $0.split(separator: " ").first.map(String.init) }
         }
 
         var seen = Set<String>()
@@ -93,6 +111,18 @@ enum Discovery {
         "python3": "Python", "ffmpeg": "FFmpeg", "rg": "ripgrep", "yt-dlp": "yt-dlp"
     ]
 
+    /// Brand colors for popular tools (else a stable per-name color).
+    static let brandColors: [String: String] = [
+        "docker": "#2496ED", "node": "#5FA04E", "python3": "#3776AB", "redis-cli": "#FF4438",
+        "psql": "#4169E1", "git": "#F05032", "gh": "#6E5494", "ffmpeg": "#388E3C",
+        "go": "#00ADD8", "cargo": "#DEA584", "ruby": "#CC342D", "php": "#777BB4",
+        "deno": "#3C9F4A", "bun": "#E5B95C", "mysql": "#4479A1", "mongosh": "#47A248",
+        "kubectl": "#326CE5", "terraform": "#7B42BC", "ansible": "#1A1918", "ngrok": "#5C66E8",
+        "vercel": "#3A6CF6", "pnpm": "#F69220", "yarn": "#2C8EBB", "vim": "#019733",
+        "nvim": "#57A143", "tmux": "#1BB91F", "htop": "#0F9D58", "pandoc": "#3A66A7",
+        "java": "#E76F00", "pipx": "#3776AB", "cloudflared": "#F38020"
+    ]
+
     static func makeAgent(_ cmd: String) -> Agent {
         let title = nameOverride[cmd] ?? cmd
             .replacingOccurrences(of: "-", with: " ")
@@ -101,11 +131,12 @@ enum Discovery {
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }
             .joined(separator: " ")
         let mono = String(cmd.prefix(2)).uppercased()
+        let color = brandColors[cmd] ?? stableColor(cmd)
         return Agent(
             name: title,
             icon: mono,
-            color: stableColor(cmd),
-            variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: stableColor(cmd))],
+            color: color,
+            variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: color)],
             logo: logoSlug[cmd] ?? cmd,
             discovered: true
         )

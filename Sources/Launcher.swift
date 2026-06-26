@@ -13,9 +13,14 @@ enum Launcher {
         TerminalApp(rawValue: UserDefaults.standard.string(forKey: "terminalApp") ?? "") ?? .terminal
     }
 
-    /// Opens a new window in the chosen terminal running `command` in the login shell.
-    static func launch(_ command: String) {
-        let esc = command
+    /// Opens a new window in the chosen terminal running `command` (optionally cd'd into `cwd`).
+    static func launch(_ command: String, cwd: String? = nil) {
+        var full = command
+        if let cwd, !cwd.isEmpty {
+            let dir = (cwd as NSString).expandingTildeInPath
+            full = "cd \(shellQuote(dir)) && \(command)"
+        }
+        let esc = full
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
 
@@ -47,6 +52,10 @@ enum Launcher {
             end tell
             """)
         }
+    }
+
+    private static func shellQuote(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private static func runOsascript(_ script: String) {

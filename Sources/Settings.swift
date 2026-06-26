@@ -27,6 +27,7 @@ struct SettingsView: View {
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("launchAtLogin") private var launchAtLogin = false
     @AppStorage("glassBlur") private var glassBlur = true
+    @AppStorage("appearance") private var appearance = "system"
     @State private var resetConfirm = false
 
     var body: some View {
@@ -38,8 +39,13 @@ struct SettingsView: View {
                 Toggle("Quit AgentPad after launching", isOn: $quitAfterLaunch)
             }
             Section("Appearance") {
+                Picker("Theme", selection: $appearance) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
                 Toggle("Glass blur background", isOn: $glassBlur)
-                Text("Off = smooth dark panel (recommended). On = live desktop blur — prettier, heavier on the GPU.")
+                Text("Glass on = live desktop blur (prettier, heavier GPU). Off = solid panel. Summon anywhere with ⌥⌘Space.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Library") {

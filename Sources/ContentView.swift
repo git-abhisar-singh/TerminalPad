@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var logos = LogoStore.shared
+    @StateObject private var usage = UsageStore.shared
     @State private var curated: [Agent] = ConfigStore.load()
     @State private var discovered: [Agent] = []
     @State private var query = ""
@@ -11,22 +12,33 @@ struct ContentView: View {
     @AppStorage("showDiscovered") private var showDiscovered = true
     @AppStorage("quitAfterLaunch") private var quitAfterLaunch = true
     @AppStorage("glassBlur") private var glassBlur = true
+    @AppStorage("appearance") private var appearance = "system"
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
+
+    private var isDark: Bool {
+        switch appearance { case "light": return false; case "dark": return true
+        default: return colorScheme == .dark }
+    }
+    private var scheme: ColorScheme? {
+        switch appearance { case "light": return .light; case "dark": return .dark; default: return nil }
+    }
 
     private let columns = [GridItem(.adaptive(minimum: 138, maximum: 164), spacing: 26)]
 
     private var all: [Agent] { showDiscovered ? curated + discovered : curated }
 
-    private func launch(_ command: String) {
-        Launcher.launch(command)
+    private func run(_ agent: Agent, _ command: String) {
+        usage.recordLaunch(agent.name)
+        Launcher.launch(command, cwd: agent.cwd)
         if quitAfterLaunch { NSApp.hide(nil) }   // keep window alive; just dismiss (Spotlight-style)
     }
 
     private func score(_ a: Agent, _ q: String) -> Int {
         let n = a.name.lowercased()
-        if n == q { return 0 }
-        if n.hasPrefix(q) { return 1 }
-        if n.contains(q) { return 2 }
+        if n == q || a.aliases.contains(where: { $0.lowercased() == q }) { return 0 }
+        if n.hasPrefix(q) || a.aliases.contains(where: { $0.lowercased().hasPrefix(q) }) { return 1 }
+        if n.contains(q) || a.aliases.contains(where: { $0.lowercased().contains(q) }) { return 2 }
         if a.variants.contains(where: { $0.label.lowercased().contains(q) }) { return 3 }
         if a.variants.contains(where: { $0.command.lowercased().contains(q) }) { return 4 }
         return 99
@@ -50,13 +62,15 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if glassBlur {
-                GlassBackground()   // live desktop blur
-                // dark Control-Center-style tint, darker toward the bottom
-                LinearGradient(colors: [Color.black.opacity(0.34), Color.black.opacity(0.5)],
+                GlassBackground(dark: isDark)   // live desktop blur
+                // Control-Center-style tint, darker toward the bottom
+                LinearGradient(colors: isDark ? [Color.black.opacity(0.32), Color.black.opacity(0.5)]
+                                               : [Color.white.opacity(0.4), Color.white.opacity(0.62)],
                                startPoint: .top, endPoint: .bottom)
             } else {
-                LinearGradient(colors: [Color(white: 0.12), Color(white: 0.04)],
-                               startPoint: .top, endPoint: .bottom)  // opaque dark panel — cheap to composite
+                LinearGradient(colors: isDark ? [Color(white: 0.12), Color(white: 0.04)]
+                                              : [Color(white: 0.99), Color(white: 0.93)],
+                               startPoint: .top, endPoint: .bottom)
             }
             VStack(spacing: 0) {
                 searchBar
@@ -66,10 +80,10 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .strokeBorder(.white.opacity(0.12), lineWidth: 1))
+            .strokeBorder((isDark ? Color.white : Color.black).opacity(0.12), lineWidth: 1))
         .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 560)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(scheme)
         .task { await loadDiscovered() }
         .onChange(of: query) { _, _ in selection = 0 }
         .onAppear {
@@ -94,13 +108,21 @@ struct ContentView: View {
     // MARK: search
 
     private var searchBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
+            // App identity beside the traffic lights (Notes-style)
+            if let logo = AppImages.menubar {
+                Image(nsImage: logo).renderingMode(.template).resizable().scaledToFit()
+                    .frame(width: 15, height: 15).foregroundStyle(.primary)
+            }
+            Text("AgentPad").font(.system(size: 13.5, weight: .semibold)).foregroundStyle(.primary)
+            Divider().frame(height: 16).padding(.horizontal, 4)
+
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.secondary)
             TextField("Search agents and tools…", text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 21, weight: .regular))
+                .font(.system(size: 19, weight: .regular))
                 .focused($searchFocused)
                 .onSubmit(launchSelected)
                 .onKeyPress(.downArrow) { move(1); return .handled }
@@ -112,10 +134,10 @@ struct ContentView: View {
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") { showSettings = true }
         }
-        .padding(.leading, 80)      // clear the traffic-light buttons
-        .padding(.trailing, 22)
-        .padding(.top, 18)
-        .padding(.bottom, 16)
+        .padding(.leading, 84)      // clear the traffic-light buttons
+        .padding(.trailing, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
     }
 
     private func headerButton(_ symbol: String, help: String = "", action: @escaping () -> Void) -> some View {
@@ -136,9 +158,11 @@ struct ContentView: View {
         if query.isEmpty {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
-                    section("Agents", curated)
+                    let favs = all.filter { usage.isPinned($0.name) }
+                    if !favs.isEmpty { section("Favorites", sortedByUse(favs)) }
+                    section("Agents", sortedByUse(curated))
                     if showDiscovered && !discovered.isEmpty {
-                        section("Tools", discovered)
+                        section("Tools", sortedByUse(discovered))
                     }
                 }
                 .padding(.horizontal, 30).padding(.top, 14).padding(.bottom, 40)
@@ -147,9 +171,9 @@ struct ContentView: View {
         } else if results.isEmpty {
             VStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 34, weight: .light)).foregroundStyle(.white.opacity(0.3))
+                    .font(.system(size: 34, weight: .light)).foregroundStyle(.secondary)
                 Text("No agents or tools match “\(query)”")
-                    .font(.system(size: 14)).foregroundStyle(.white.opacity(0.55))
+                    .font(.system(size: 14)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -171,12 +195,19 @@ struct ContentView: View {
         }
     }
 
+    private func sortedByUse(_ items: [Agent]) -> [Agent] {
+        items.enumerated().sorted { l, r in
+            let cl = usage.count(l.element.name), cr = usage.count(r.element.name)
+            return cl != cr ? cl > cr : l.offset < r.offset
+        }.map { $0.element }
+    }
+
     @ViewBuilder private func section(_ title: String, _ items: [Agent]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(0.8)
-                .foregroundStyle(.white.opacity(0.38))
+                .foregroundStyle(.secondary)
                 .padding(.leading, 6)
             LazyVGrid(columns: columns, spacing: 24) {
                 ForEach(items) { agent in tile(agent) }
@@ -185,16 +216,27 @@ struct ContentView: View {
     }
 
     private func tile(_ agent: Agent) -> some View {
-        AgentTile(agent: agent, logos: logos) { tapped in
+        AgentTile(agent: agent, logos: logos, pinned: usage.isPinned(agent.name)) { tapped in
             if tapped.variants.count <= 1 {
-                tapped.variants.first.map { launch($0.command) }
+                tapped.variants.first.map { run(tapped, $0.command) }
             } else { popoverAgent = tapped }
+        }
+        .contextMenu {
+            Button(usage.isPinned(agent.name) ? "Unpin" : "Pin to Favorites") {
+                usage.togglePin(agent.name)
+            }
+            if let v = agent.variants.first {
+                Button("Copy command") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(v.command, forType: .string)
+                }
+            }
         }
         .popover(isPresented: Binding(
             get: { popoverAgent == agent },
             set: { if !$0 { popoverAgent = nil } })) {
             VariantPicker(agent: agent, logos: logos) { v in
-                popoverAgent = nil; launch(v.command)
+                popoverAgent = nil; run(agent, v.command)
             }
         }
     }
@@ -209,7 +251,7 @@ struct ContentView: View {
     private func launchSelected() {
         let list = results
         guard list.indices.contains(selection), let v = list[selection].variants.first else { return }
-        launch(v.command)
+        run(list[selection], v.command)
     }
 
     private func reload() {
@@ -236,20 +278,31 @@ struct AgentIcon: View {
     let agent: Agent
     @ObservedObject var logos: LogoStore
     var size: CGFloat = 96
+    @Environment(\.colorScheme) private var scheme
+
+    private var dark: Bool { scheme == .dark }
+
+    // Dark: vivid brand tile + white mark. Light: soft light tile + brand-coloured mark.
+    private var tileFill: AnyShapeStyle {
+        dark ? AnyShapeStyle(agent.swiftColor.opacity(0.85).gradient)
+             : AnyShapeStyle(LinearGradient(colors: [Color.white, Color(white: 0.93)],
+                                            startPoint: .top, endPoint: .bottom))
+    }
+    private var mark: Color { dark ? .white : agent.swiftColor }
 
     var body: some View {
         ZStack {
+            RoundedRectangle(cornerRadius: size * 0.27, style: .continuous).fill(tileFill)
             RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
-                .fill(agent.swiftColor.opacity(0.78).gradient)
-            RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
-                .stroke(.white.opacity(0.16), lineWidth: 1)
+                .stroke((dark ? Color.white : Color.black).opacity(0.12), lineWidth: 1)
             if let img = logos.image(agent.logo) {
-                Image(nsImage: img).resizable().scaledToFit()
+                Image(nsImage: img).renderingMode(.template).resizable().scaledToFit()
                     .padding(size * 0.24)
+                    .foregroundStyle(mark)
             } else {
                 Text(agent.icon)
-                    .font(.system(size: size * 0.32, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: size * 0.30, weight: .semibold))
+                    .foregroundStyle(mark)
             }
         }
         .frame(width: size, height: size)
@@ -261,6 +314,7 @@ struct AgentIcon: View {
 struct AgentTile: View {
     let agent: Agent
     @ObservedObject var logos: LogoStore
+    var pinned: Bool = false
     let onTap: (Agent) -> Void
     @State private var hover = false
 
@@ -268,15 +322,25 @@ struct AgentTile: View {
         Button { onTap(agent) } label: {
             VStack(spacing: 11) {
                 AgentIcon(agent: agent, logos: logos, size: 94)
+                    .overlay(alignment: .topTrailing) {
+                        if pinned {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.yellow)
+                                .padding(5)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .offset(x: 7, y: -7)
+                        }
+                    }
                     .scaleEffect(hover ? 1.06 : 1.0)
                 VStack(spacing: 2) {
                     Text(agent.name)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.95)).lineLimit(1)
+                        .foregroundStyle(.primary).lineLimit(1)
                     Text(agent.discovered ? "tool"
                          : agent.variants.count == 1 ? "1 mode" : "\(agent.variants.count) modes")
                         .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.42))
+                        .foregroundStyle(.secondary)
                 }
             }
             .frame(width: 138)
@@ -298,22 +362,22 @@ struct ResultRow: View {
         HStack(spacing: 14) {
             AgentIcon(agent: agent, logos: logos, size: 44)
             VStack(alignment: .leading, spacing: 2) {
-                Text(agent.name).font(.system(size: 15, weight: .semibold))
+                Text(agent.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(.primary)
                 Text(agent.variants.first?.command ?? "")
                     .font(.system(size: 11.5, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.45)).lineLimit(1)
+                    .foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             if agent.variants.count > 1 {
                 Text("\(agent.variants.count)")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(.white.opacity(0.1), in: Capsule())
+                    .background(.primary.opacity(0.08), in: Capsule())
             }
             Image(systemName: "return")
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.white.opacity(selected ? 0.85 : 0.0))
+                .foregroundStyle(.primary.opacity(selected ? 0.85 : 0.0))
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
         .background(selected ? AnyShapeStyle(agent.swiftColor.opacity(0.22)) : AnyShapeStyle(.clear),
@@ -402,18 +466,22 @@ extension View {
 }
 
 struct GlassBackground: NSViewRepresentable {
+    var dark: Bool = true
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let v = NSVisualEffectView()
-        v.material = .hudWindow
         v.blendingMode = .behindWindow
         v.state = .active
-        v.appearance = NSAppearance(named: .vibrantDark)
         v.wantsLayer = true
         v.layer?.cornerRadius = 24
-        v.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
-                                  .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         v.layer?.masksToBounds = true
+        apply(v)
         return v
     }
-    func updateNSView(_ v: NSVisualEffectView, context: Context) {}
+    func updateNSView(_ v: NSVisualEffectView, context: Context) { apply(v) }
+
+    private func apply(_ v: NSVisualEffectView) {
+        v.material = dark ? .hudWindow : .popover
+        v.appearance = NSAppearance(named: dark ? .vibrantDark : .vibrantLight)
+    }
 }
