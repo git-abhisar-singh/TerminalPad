@@ -292,12 +292,12 @@ struct ContentView: View {
     }
 
     private var onboardingCard: some View {
-        HStack(spacing: 11) {
-            Image(systemName: "sparkles").font(.system(size: 14)).foregroundStyle(.yellow)
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .top, spacing: 11) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("Welcome to AgentPad").font(.system(size: 12.5, weight: .semibold))
-                Text("Summon anywhere with ⌥⌘Space · arrow keys + Return to launch · right-click a tile to Pin or Run in Folder")
+                Text("A launcher for your terminal agents and CLI tools. Click any tile to open it in your terminal, or type to search and press Return.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             Button { withAnimation { seenOnboarding = true } } label: {
