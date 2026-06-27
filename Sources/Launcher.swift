@@ -61,6 +61,22 @@ enum Launcher {
         run("/usr/bin/open", ["-a", name])
     }
 
+    // MARK: Keep launched apps on the current desktop (macOS Mission Control setting)
+    //
+    // `com.apple.dock workspaces-auto-swoosh` = "switch to a Space with open windows for the
+    // application". false => the app comes to your current desktop instead of jumping Spaces.
+    // It's a system-wide setting; we just surface a convenient toggle for it.
+
+    static var keepAppsOnCurrentSpace: Bool {
+        let v = UserDefaults(suiteName: "com.apple.dock")?.object(forKey: "workspaces-auto-swoosh") as? Bool
+        return v == false        // unset/true => macOS jumps Spaces; false => stays put
+    }
+
+    static func setKeepAppsOnCurrentSpace(_ on: Bool) {
+        run("/usr/bin/defaults", ["write", "com.apple.dock", "workspaces-auto-swoosh", "-bool", on ? "false" : "true"])
+        run("/usr/bin/killall", ["Dock"])
+    }
+
     private static func shellQuote(_ s: String) -> String {
         "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }

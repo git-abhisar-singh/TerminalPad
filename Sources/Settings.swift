@@ -38,6 +38,7 @@ struct SettingsView: View {
     @AppStorage("rescanOnLaunch") private var rescanOnLaunch = true
     @AppStorage("hapticLevel") private var hapticLevel = "strong"
     @State private var resetConfirm = false
+    @State private var keepOnSpace = Launcher.keepAppsOnCurrentSpace
     @State private var newName = ""
     @State private var newCommand = ""
     @State private var newAlias = ""
@@ -121,6 +122,10 @@ struct SettingsView: View {
             Section("System") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in setLoginItem(on) }
+                Toggle("Open apps on the current desktop", isOn: $keepOnSpace)
+                    .onChange(of: keepOnSpace) { _, on in Launcher.setKeepAppsOnCurrentSpace(on) }
+                Text("Stops macOS jumping to another Space when an app already has a window there. This changes a system-wide Mission Control setting.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("About") {
                 HStack {
