@@ -20,12 +20,12 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 
 ## Features
 
-- **Launchpad grid** of agents — pure dark, transparent panel. Real Liquid Glass on macOS 26, a clean dark blur everywhere else.
-- **Spotlight search** — opens focused. Type to filter, `↑`/`↓` to move, `Enter` launches the top match, `Esc` clears/closes.
-- **Per-mode tiles** — `claude` vs `claude --dangerously-skip-permissions` vs `claude -c` each get their own icon and color.
-- **Real logos** — fetched from [Simple Icons](https://simpleicons.org), rendered white on glass. ~50 ship bundled; unknown tools fetch on demand and cache.
-- **Auto-discovery** — scans `brew leaves`, npm globals, pipx, and `cargo`/`go`/`bun`/`~/.local/bin`, adding every installed CLI with a matched logo (or a clean monogram fallback). Results are cached, so the grid is instant on launch and rescans in the background.
-- **JSON config** — edit `~/.config/terminalpad/agents.json` to add agents/modes. No rebuild.
+- **Fast — into your agent in milliseconds.** Opens focused. Type, `↑`/`↓` to move, `Enter` launches the top match, `Esc` closes. No mouse, no menus.
+- **Instant — every CLI you own, already here.** Auto-discovers Homebrew, npm, pipx, cargo, go & bun in parallel. Cached to disk, so the grid is there the moment you open it.
+- **Precise — every flag, its own tile.** `claude` vs `claude --dangerously-skip-permissions` vs `claude -c` each get their own tile, icon, and color. Never look up a flag again.
+- **Everywhere — one shortcut, from any app.** `⌥⌘Space` summons it over whatever you're doing. Menu-bar resident, always a keystroke away.
+- **Native — looks like Mac, because it is.** Pure SwiftUI with real [Simple Icons](https://simpleicons.org) brand logos. Liquid Glass on macOS 26, a clean dark panel everywhere else.
+- **Yours — bend it to your setup.** Plain JSON at `~/.config/terminalpad/agents.json` — add agents, modes, working dirs. Hit reload, no rebuild.
 
 ## Install
 
