@@ -1,0 +1,13 @@
+/* TEAM */
+  Creator: Abhisar Singh
+  Site: https://vroq.in
+  X: @helloabhisar
+  GitHub: @git-abhisar-singh
+  From: India
+
+/* SITE */
+  Project: TerminalPad — the home screen for your terminal on Mac
+  Source: https://github.com/git-abhisar-singh/TerminalPad
+  License: MIT
+  Components: SwiftUI, AppKit
+  Built with: hand-rolled HTML/CSS/JS, no framework
