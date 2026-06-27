@@ -31,6 +31,10 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 
 <div align="center">
 
+<img src="docs/assets/demo.gif" width="100%" alt="TerminalPad demo — browse agents, search, and add tools" />
+
+<br />
+
 <img src="docs/assets/shots/01-grid.png" width="100%" alt="TerminalPad grid — your agents and tools" />
 
 </div>
