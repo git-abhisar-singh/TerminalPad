@@ -84,6 +84,14 @@ enum Discovery {
 
     static func firstWord(_ cmd: String) -> String { cmd.split(separator: " ").first.map(String.init) ?? cmd }
 
+    /// Synchronous, no-subprocess check for one command — authoritative at launch time
+    /// (doesn't depend on the async installed-set being loaded yet).
+    static func commandExists(_ base: String) -> Bool {
+        let fm = FileManager.default
+        let dirs = brewBins + userBinDirs() + ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+        return dirs.contains { fm.isExecutableFile(atPath: "\($0)/\(base)") }
+    }
+
     /// True if a GUI app with this name is installed (so we can open it when the CLI is absent).
     static func isAppInstalled(_ name: String?) -> Bool {
         guard let name, !name.isEmpty else { return false }

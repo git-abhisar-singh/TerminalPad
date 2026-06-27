@@ -29,9 +29,30 @@ struct Agent: Codable, Identifiable, Hashable {
     var app: String? = nil     // GUI app name to open when the CLI isn't installed (e.g. "Cursor")
     var discovered: Bool = false
 
-    enum CodingKeys: String, CodingKey { case name, icon, color, variants, logo, aliases, cwd, symbol, colorIcon, app }
+    enum CodingKeys: String, CodingKey { case id, name, icon, color, variants, logo, aliases, cwd, symbol, colorIcon, app }
 
     var swiftColor: Color { Color(hex: color) }
+}
+
+extension Agent {
+    /// Custom decode so `id` is persisted and STABLE across loads (older configs without an
+    /// id get a fresh one, which is then written back on the next save). Defined in an
+    /// extension so the memberwise initializer is preserved. Without this, every load minted
+    /// new UUIDs and id-based matching (remove/edit/grid identity) silently failed.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
+        self.name = try c.decode(String.self, forKey: .name)
+        self.icon = try c.decode(String.self, forKey: .icon)
+        self.color = try c.decode(String.self, forKey: .color)
+        self.variants = try c.decode([Variant].self, forKey: .variants)
+        self.logo = try? c.decode(String.self, forKey: .logo)
+        self.aliases = (try? c.decode([String].self, forKey: .aliases)) ?? []
+        self.cwd = try? c.decode(String.self, forKey: .cwd)
+        self.symbol = try? c.decode(String.self, forKey: .symbol)
+        self.colorIcon = (try? c.decode(Bool.self, forKey: .colorIcon)) ?? false
+        self.app = try? c.decode(String.self, forKey: .app)
+    }
 }
 
 struct AgentConfig: Codable {

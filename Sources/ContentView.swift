@@ -43,8 +43,8 @@ struct ContentView: View {
         // If the CLI isn't installed but the agent ships a GUI app, open the app instead of
         // running a missing command in Terminal.
         let base = Discovery.firstWord(command)
-        let cliPresent = installedCmds.contains(base)
-        if !cliPresent, !installedCmds.isEmpty, let app = agent.app, Discovery.isAppInstalled(app) {
+        let cliPresent = installedCmds.contains(base) || Discovery.commandExists(base)
+        if !cliPresent, let app = agent.app, Discovery.isAppInstalled(app) {
             Launcher.openApp(app)
         } else {
             Launcher.launch(command, cwd: cwd ?? agent.cwd)
@@ -509,7 +509,7 @@ struct ContentView: View {
 
     private func removeAgent(_ agent: Agent) {
         var agents = ConfigStore.load()
-        agents.removeAll { $0.id == agent.id }
+        agents.removeAll { $0.id == agent.id || $0.name == agent.name }
         ConfigStore.save(agents)
         if usage.isPinned(agent.name) { usage.togglePin(agent.name) }
         reload()
@@ -1018,7 +1018,7 @@ struct AddAgentPage: View {
         let al = aliases.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let c = color.hasPrefix("#") ? color : "#5B8DEF"
         var agents = ConfigStore.load()
-        if let editing, let idx = agents.firstIndex(where: { $0.id == editing.id }) {
+        if let editing, let idx = agents.firstIndex(where: { $0.id == editing.id || $0.name == editing.name }) {
             // edit: keep all variants, update the first command + metadata
             var a = agents[idx]
             a.name = n; a.color = c; a.icon = String(n.prefix(2)).uppercased(); a.aliases = al
