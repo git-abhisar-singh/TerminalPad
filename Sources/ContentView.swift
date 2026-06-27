@@ -19,6 +19,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
     @State private var showAddAgent = false
+    @State private var editAgent: Agent? = nil   // non-nil = editing an existing agent
     @State private var launchToast: String? = nil
     @State private var helpText: String? = nil
     @State private var helpTitle = ""
@@ -131,12 +132,12 @@ struct ContentView: View {
                     Button("") { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } }
                         .keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0)
                 } else if showAddAgent {
-                    pageHeader { withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = false } }
-                    AddAgentPage(logos: logos) { added in
-                        withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = false }
-                        if added { reload() }
-                    }
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    pageHeader { closeAddAgent() }
+                    AddAgentPage(logos: logos, editing: editAgent,
+                                 onReload: { reload() },
+                                 onClose: { closeAddAgent() })
+                        .id(editAgent?.id)   // rebuild the form when switching add/edit target
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 } else {
                     searchRow
                     content
@@ -189,7 +190,9 @@ struct ContentView: View {
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
         // Title only — this region overlaps the draggable titlebar, so NO buttons here.
-        Text(showSettings ? "Settings" : showAddAgent ? "Add Agent" : "TerminalPad")
+        Text(showSettings ? "Settings"
+             : showAddAgent ? (editAgent != nil ? "Edit Agent" : "Add Agent")
+             : "TerminalPad")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
@@ -200,7 +203,10 @@ struct ContentView: View {
     private var searchRow: some View {
         HStack(spacing: 10) {
             searchField
-            headerButton("plus", help: "Add a tool or agent manually") { showAddAgent = true }
+            headerButton("plus", help: "Add a tool or agent") {
+                editAgent = nil
+                withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = true }
+            }
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") {
                 withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
@@ -433,6 +439,14 @@ struct ContentView: View {
                     NSPasteboard.general.setString(v.command, forType: .string)
                 }
             }
+            if !agent.discovered {
+                Divider()
+                Button("Edit…") {
+                    editAgent = agent
+                    withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = true }
+                }
+                Button("Remove", role: .destructive) { removeAgent(agent) }
+            }
         }
         .popover(isPresented: Binding(
             get: { popoverAgent == agent },
@@ -468,6 +482,19 @@ struct ContentView: View {
     private func reload() {
         curated = ConfigStore.load()
         Task { await loadDiscovered() }
+    }
+
+    private func closeAddAgent() {
+        withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = false }
+        editAgent = nil
+    }
+
+    private func removeAgent(_ agent: Agent) {
+        var agents = ConfigStore.load()
+        agents.removeAll { $0.id == agent.id }
+        ConfigStore.save(agents)
+        if usage.isPinned(agent.name) { usage.togglePin(agent.name) }
+        reload()
     }
 
     private func loadDiscovered() async {
@@ -762,22 +789,43 @@ struct HelpSheet: View {
     }
 }
 
-/// Full-page editor to add a tool or agent. The icon is auto-detected from the command
+/// Full-page editor to add or edit a tool/agent. The icon is auto-detected from the command
 /// (brand logo via Simple Icons); if none is found you can pick a custom image or an SF Symbol.
+/// In add mode it also lists the popular-agent catalog for one-click adding.
 struct AddAgentPage: View {
     @ObservedObject var logos: LogoStore
-    var onDone: (_ added: Bool) -> Void
+    var editing: Agent?                 // nil = adding a new agent
+    var onReload: () -> Void            // refresh the grid underneath (no close)
+    var onClose: () -> Void             // leave the page
 
     enum IconMode: String, CaseIterable { case auto = "Auto", image = "Custom", symbol = "Symbol" }
 
-    @State private var name = ""
-    @State private var command = ""
-    @State private var aliases = ""
-    @State private var color = "#5B8DEF"
-    @State private var iconMode: IconMode = .auto
-    @State private var customSlug: String? = nil
-    @State private var symbolName = "terminal"
+    @State private var name: String
+    @State private var command: String
+    @State private var aliases: String
+    @State private var color: String
+    @State private var iconMode: IconMode
+    @State private var customSlug: String?
+    @State private var symbolName: String
+    @State private var installed: Set<String> = []
+    @State private var existing: Set<String> = []
 
+    init(logos: LogoStore, editing: Agent?, onReload: @escaping () -> Void, onClose: @escaping () -> Void) {
+        self.logos = logos; self.editing = editing; self.onReload = onReload; self.onClose = onClose
+        _name = State(initialValue: editing?.name ?? "")
+        _command = State(initialValue: editing?.variants.first?.command ?? "")
+        _aliases = State(initialValue: editing?.aliases.joined(separator: ", ") ?? "")
+        _color = State(initialValue: editing?.color ?? "#5B8DEF")
+        _customSlug = State(initialValue: editing?.colorIcon == true ? editing?.logo : nil)
+        _symbolName = State(initialValue: editing?.symbol ?? "terminal")
+        if let e = editing {
+            if e.colorIcon { _iconMode = State(initialValue: .image) }
+            else if let s = e.symbol, !s.isEmpty { _iconMode = State(initialValue: .symbol) }
+            else { _iconMode = State(initialValue: .auto) }
+        } else { _iconMode = State(initialValue: .auto) }
+    }
+
+    private var isEditing: Bool { editing != nil }
     private var base: String { command.split(separator: " ").first.map(String.init) ?? command }
     private var mono: String { String(name.prefix(2)).uppercased() }
     private var autoFound: Bool { !base.isEmpty && logos.image(base) != nil }
@@ -785,7 +833,6 @@ struct AddAgentPage: View {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
         !command.trimmingCharacters(in: .whitespaces).isEmpty
     }
-
     private var previewAgent: Agent {
         var a = Agent(name: name.isEmpty ? "New Tool" : name, icon: mono.isEmpty ? "?" : mono,
                       color: color.hasPrefix("#") ? color : "#5B8DEF", variants: [Variant(label: "Run", command: command)])
@@ -799,12 +846,10 @@ struct AddAgentPage: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Live preview
+            VStack(spacing: 22) {
                 VStack(spacing: 10) {
                     AgentIcon(agent: previewAgent, logos: logos, size: 96)
-                    Text(name.isEmpty ? "New Tool" : name)
-                        .font(.system(size: 15, weight: .semibold))
+                    Text(name.isEmpty ? "New Tool" : name).font(.system(size: 15, weight: .semibold))
                 }
                 .padding(.top, 4)
 
@@ -812,16 +857,22 @@ struct AddAgentPage: View {
                     field("Name", "e.g. My Server", $name)
                     field("Command", "e.g. ssh prod  ·  claude --resume  ·  aider", $command, mono: true)
                     field("Aliases", "optional · comma-separated, e.g. srv, prod", $aliases)
+
                     HStack(spacing: 10) {
                         label("Color")
+                        ColorPicker("", selection: Binding(
+                            get: { Color(hex: color) }, set: { color = $0.hexString }))
+                            .labelsHidden().frame(width: 44)
                         TextField("#5B8DEF", text: $color).textFieldStyle(.roundedBorder)
-                            .font(.system(size: 13, design: .monospaced)).frame(width: 120)
-                        RoundedRectangle(cornerRadius: 6).fill(Color(hex: color)).frame(width: 26, height: 26)
-                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.15)))
+                            .font(.system(size: 13, design: .monospaced)).frame(width: 110)
+                        ForEach(["#D97757", "#4285F4", "#10B981", "#8E7CFF", "#F34E3F", "#615CED"], id: \.self) { hex in
+                            Circle().fill(Color(hex: hex)).frame(width: 20, height: 20)
+                                .overlay(Circle().strokeBorder(.white.opacity(color == hex ? 0.9 : 0.15), lineWidth: 2))
+                                .onTapGesture { color = hex }
+                        }
                         Spacer()
                     }
 
-                    // Icon source
                     HStack(alignment: .top, spacing: 10) {
                         label("Icon")
                         VStack(alignment: .leading, spacing: 8) {
@@ -829,14 +880,12 @@ struct AddAgentPage: View {
                                 ForEach(IconMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                             }
                             .pickerStyle(.segmented).labelsHidden().frame(width: 260)
-
                             switch iconMode {
                             case .auto:
                                 Label(autoFound ? "Auto-detected from the command"
                                                  : "No brand logo found — uses initials, or pick Custom / Symbol",
                                       systemImage: autoFound ? "checkmark.circle.fill" : "info.circle")
-                                    .font(.caption)
-                                    .foregroundStyle(autoFound ? .green : .secondary)
+                                    .font(.caption).foregroundStyle(autoFound ? .green : .secondary)
                             case .image:
                                 HStack(spacing: 10) {
                                     Button("Choose Image…") { pickImage() }
@@ -847,11 +896,9 @@ struct AddAgentPage: View {
                                 }
                             case .symbol:
                                 HStack(spacing: 8) {
-                                    TextField("SF Symbol name, e.g. server.rack", text: $symbolName)
-                                        .textFieldStyle(.roundedBorder).font(.system(size: 13, design: .monospaced))
-                                        .frame(width: 240)
-                                    Link("Browse", destination: URL(string: "https://developer.apple.com/sf-symbols/")!)
-                                        .font(.caption)
+                                    TextField("SF Symbol, e.g. server.rack", text: $symbolName)
+                                        .textFieldStyle(.roundedBorder).font(.system(size: 13, design: .monospaced)).frame(width: 240)
+                                    Link("Browse", destination: URL(string: "https://developer.apple.com/sf-symbols/")!).font(.caption)
                                 }
                             }
                         }
@@ -861,19 +908,55 @@ struct AddAgentPage: View {
                 .frame(maxWidth: 520)
 
                 HStack(spacing: 12) {
-                    Button("Cancel") { onDone(false) }
-                    Button("Add Agent") { add() }
+                    Button("Cancel") { onClose() }
+                    Button(isEditing ? "Save Changes" : "Add Agent") { save() }
                         .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(!canAdd)
                 }
-                .padding(.top, 4)
-                Text("Saved to ~/.config/terminalpad/agents.json")
-                    .font(.caption2).foregroundStyle(.tertiary)
+
+                if !isEditing {
+                    let suggestions = AgentCatalog.all.filter { !existing.contains($0.name) }
+                    if !suggestions.isEmpty {
+                        Divider().frame(maxWidth: 520).padding(.top, 6)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("POPULAR AGENTS").font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.secondary).tracking(0.6)
+                            ForEach(suggestions) { a in catalogRow(a) }
+                        }
+                        .frame(maxWidth: 520)
+                    }
+                }
             }
             .padding(.horizontal, 28).padding(.bottom, 28)
             .frame(maxWidth: .infinity)
         }
         .onChange(of: command) { _, _ in if iconMode == .auto { logos.request(base) } }
-        .onAppear { logos.request(base) }
+        .onAppear {
+            logos.request(base)
+            existing = Set(ConfigStore.load().map { $0.name })
+            DispatchQueue.global(qos: .utility).async {
+                let set = Discovery.installedCommands()
+                DispatchQueue.main.async { installed = set }
+            }
+        }
+    }
+
+    private func catalogRow(_ a: Agent) -> some View {
+        let isInst = Discovery.isInstalled(a, in: installed)
+        return HStack(spacing: 12) {
+            AgentIcon(agent: a, logos: logos, size: 38)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(a.name).font(.system(size: 13, weight: .semibold))
+                Text(isInst ? "Installed" : "Not installed yet")
+                    .font(.caption2)
+                    .foregroundStyle(isInst ? .green : .secondary)
+            }
+            Spacer()
+            Button { addCatalog(a) } label: {
+                Label("Add", systemImage: "plus").font(.system(size: 12, weight: .semibold))
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(.vertical, 4)
     }
 
     private func label(_ t: String) -> some View {
@@ -885,8 +968,7 @@ struct AddAgentPage: View {
                                     _ text: Binding<String>, mono: Bool = false) -> some View {
         HStack(spacing: 10) {
             self.label(label)
-            TextField(placeholder, text: text)
-                .textFieldStyle(.roundedBorder)
+            TextField(placeholder, text: text).textFieldStyle(.roundedBorder)
                 .font(.system(size: 13, design: mono ? .monospaced : .default))
         }
     }
@@ -898,28 +980,50 @@ struct AddAgentPage: View {
         panel.canChooseDirectories = false
         panel.prompt = "Use Image"
         if panel.runModal() == .OK, let url = panel.url, let slug = logos.addCustom(from: url) {
-            customSlug = slug
-            iconMode = .image
+            customSlug = slug; iconMode = .image
         }
     }
 
-    private func add() {
+    private func addCatalog(_ a: Agent) {
+        var agents = ConfigStore.load()
+        guard !agents.contains(where: { $0.name == a.name }) else { return }
+        agents.append(a)
+        ConfigStore.save(agents)
+        existing.insert(a.name)
+        onReload()
+    }
+
+    private func save() {
         let n = name.trimmingCharacters(in: .whitespaces)
         let cmd = command.trimmingCharacters(in: .whitespaces)
         guard !n.isEmpty, !cmd.isEmpty else { return }
         let al = aliases.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let c = color.hasPrefix("#") ? color : "#5B8DEF"
-        var a = Agent(name: n, icon: String(n.prefix(2)).uppercased(), color: c,
-                      variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: c)], aliases: al)
-        switch iconMode {
-        case .auto:   a.logo = cmd.split(separator: " ").first.map(String.init)
-        case .image:  a.logo = customSlug; a.colorIcon = true
-        case .symbol: a.symbol = symbolName.trimmingCharacters(in: .whitespaces)
-        }
         var agents = ConfigStore.load()
-        agents.append(a)
+        if let editing, let idx = agents.firstIndex(where: { $0.id == editing.id }) {
+            // edit: keep all variants, update the first command + metadata
+            var a = agents[idx]
+            a.name = n; a.color = c; a.icon = String(n.prefix(2)).uppercased(); a.aliases = al
+            if !a.variants.isEmpty { a.variants[0].command = cmd } else { a.variants = [Variant(label: "Run", command: cmd)] }
+            a.logo = nil; a.symbol = nil; a.colorIcon = false
+            switch iconMode {
+            case .auto:   a.logo = Discovery.firstWord(cmd)
+            case .image:  a.logo = customSlug; a.colorIcon = true
+            case .symbol: a.symbol = symbolName.trimmingCharacters(in: .whitespaces)
+            }
+            agents[idx] = a
+        } else {
+            var a = Agent(name: n, icon: String(n.prefix(2)).uppercased(), color: c,
+                          variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: c)], aliases: al)
+            switch iconMode {
+            case .auto:   a.logo = Discovery.firstWord(cmd)
+            case .image:  a.logo = customSlug; a.colorIcon = true
+            case .symbol: a.symbol = symbolName.trimmingCharacters(in: .whitespaces)
+            }
+            agents.append(a)
+        }
         ConfigStore.save(agents)
-        onDone(true)
+        onReload(); onClose()
     }
 }
 

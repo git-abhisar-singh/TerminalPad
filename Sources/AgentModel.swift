@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 struct Variant: Codable, Identifiable, Hashable {
     var id = UUID()
@@ -105,7 +106,18 @@ enum ConfigStore {
         }
     }
 
-    static let defaults: [Agent] = [
+    /// Seeded on first run: only catalog agents whose command is actually installed.
+    /// (Popular but uninstalled agents live in the Add page as one-click suggestions.)
+    static var defaults: [Agent] {
+        let installed = Discovery.installedCommands()
+        return AgentCatalog.all.filter { Discovery.isInstalled($0, in: installed) }
+    }
+}
+
+/// The built-in catalog of popular AI coding agents. Shown in the Add page so any of them
+/// is one click to add; the installed ones are seeded into the grid automatically.
+enum AgentCatalog {
+    static let all: [Agent] = [
         Agent(name: "Claude Code", icon: "CC", color: "#D97757", variants: [
             Variant(label: "Normal",            command: "claude",                                  icon: "play.fill",            color: "#D97757"),
             Variant(label: "Skip Permissions",  command: "claude --dangerously-skip-permissions",   icon: "bolt.fill",            color: "#F4A261"),
@@ -192,5 +204,14 @@ extension Color {
         } else {
             self.init(.sRGB, red: 0.5, green: 0.5, blue: 0.5, opacity: 1)
         }
+    }
+
+    /// "#RRGGBB" for this color (used to round-trip the ColorPicker back into config).
+    var hexString: String {
+        let ns = NSColor(self).usingColorSpace(.sRGB) ?? .gray
+        let r = Int((ns.redComponent * 255).rounded())
+        let g = Int((ns.greenComponent * 255).rounded())
+        let b = Int((ns.blueComponent * 255).rounded())
+        return String(format: "#%02X%02X%02X", r, g, b)
     }
 }

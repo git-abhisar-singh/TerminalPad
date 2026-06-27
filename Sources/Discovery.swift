@@ -63,6 +63,31 @@ enum Discovery {
         return nil
     }
 
+    /// Every executable name available on the system (full PATH incl. system bins) — used only
+    /// for *membership* tests like "is this command installed", never for listing in the grid.
+    static func installedCommands() -> Set<String> {
+        let fm = FileManager.default
+        var dirs = Set<String>()
+        let shellPath = run("/bin/zsh", ["-lc", "printf %s \"$PATH\""])
+        dirs.formUnion(shellPath.split(separator: ":").map(String.init))
+        dirs.formUnion(brewBins)
+        dirs.formUnion(userBinDirs())
+        dirs.formUnion(["/usr/bin", "/bin", "/usr/sbin", "/sbin"])
+        var set = Set<String>()
+        for dir in dirs {
+            guard let items = try? fm.contentsOfDirectory(atPath: dir) else { continue }
+            for f in items where !f.hasPrefix(".") { set.insert(f) }
+        }
+        return set
+    }
+
+    static func firstWord(_ cmd: String) -> String { cmd.split(separator: " ").first.map(String.init) ?? cmd }
+
+    /// An agent counts as installed if any of its variants' base commands exists on the system.
+    static func isInstalled(_ agent: Agent, in set: Set<String>) -> Bool {
+        agent.variants.contains { set.contains(firstWord($0.command)) }
+    }
+
     /// User-owned package/bin dirs. Everything here was installed deliberately by the user
     /// (cargo/go/bun/pipx/pnpm/etc.) — never Homebrew dependency binaries.
     static func userBinDirs() -> [String] {
