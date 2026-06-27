@@ -177,7 +177,7 @@ struct SettingsView: View {
     private func checkUpdate() {
         updateStatus = "Checking…"
         Task {
-            guard let url = URL(string: "https://api.github.com/repos/abhisarsinghwork/terminalpad/releases/latest"),
+            guard let url = URL(string: "https://api.github.com/repos/git-abhisar-singh/TerminalPad/releases/latest"),
                   let (data, _) = try? await URLSession.shared.data(from: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let tag = json["tag_name"] as? String else {
