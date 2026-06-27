@@ -84,11 +84,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         for agent in ConfigStore.load() {
-            if let v = agent.variants.first {
-                let mi = NSMenuItem(title: "\(agent.name) — \(v.label)",
+            if agent.variants.first != nil {
+                let mi = NSMenuItem(title: "\(agent.name) — \(agent.variants[0].label)",
                                     action: #selector(launchAgent(_:)), keyEquivalent: "")
                 mi.target = self
-                mi.representedObject = v.command
+                mi.representedObject = agent          // carry the whole agent (for the app fallback)
                 menu.addItem(mi)
             }
         }
@@ -108,10 +108,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openMain() { showMain() }
     @objc private func launchAgent(_ sender: NSMenuItem) {
-        guard let cmd = sender.representedObject as? String else { return }
-        // Bring the app forward first so macOS reliably routes the AppleScript launch.
+        guard let agent = sender.representedObject as? Agent, let v = agent.variants.first else { return }
         NSApp.activate(ignoringOtherApps: true)
-        Launcher.launch(cmd)
+        // Same CLI-vs-app logic as the grid: open the app if the CLI isn't installed.
+        let base = Discovery.firstWord(v.command)
+        if !Discovery.commandExists(base), let app = agent.app, Discovery.isAppInstalled(app) {
+            Launcher.openApp(app)
+        } else {
+            Launcher.launch(v.command, cwd: agent.cwd)
+        }
     }
     @objc private func openSettings() {
         showMain()

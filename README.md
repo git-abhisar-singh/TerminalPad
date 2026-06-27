@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icon-preview.png" width="120" alt="TerminalPad icon" />
+<img src="docs/assets/banner.png" alt="TerminalPad — launch your whole terminal in one keystroke" />
 
 # TerminalPad
 
