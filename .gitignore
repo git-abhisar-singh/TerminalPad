@@ -10,3 +10,10 @@ AppIcon.iconset/
 # Editor
 .vscode/
 *.swp
+
+# python
+__pycache__/
+*.pyc
+
+# raw design exports
+Figma*.png
