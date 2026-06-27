@@ -30,17 +30,31 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------- ambient background ---------- */
 .aurora { position: fixed; inset: 0; z-index: -2; overflow: hidden; }
-/* faint purple breath only — page stays black & white; purple lives in the accents */
+/* black canvas, soft WHITE gradients drifting, one PURPLE accent glow */
 .blob {
-  position: absolute; border-radius: 50%; filter: blur(130px); opacity: 0.12;
-  animation: drift 22s var(--ease) infinite alternate;
+  position: absolute; border-radius: 50%; filter: blur(130px);
+  animation: drift 24s var(--ease) infinite alternate;
 }
-.b1 { width: 560px; height: 560px; top: -200px; left: -140px;
-  background: radial-gradient(circle, #7c3aed, transparent 70%); }
-.b2 { width: 520px; height: 520px; top: 2%; right: -200px;
-  background: radial-gradient(circle, #a855f7, transparent 70%); animation-delay: -6s; opacity: 0.10; }
-.b3 { width: 640px; height: 640px; bottom: -300px; left: 32%;
-  background: radial-gradient(circle, #6d28d9, transparent 70%); animation-delay: -12s; opacity: 0.07; }
+.b1 { width: 620px; height: 620px; top: -200px; left: -140px;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%); opacity: 0.08; }
+.b2 { width: 560px; height: 560px; top: 4%; right: -200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.85), transparent 70%); opacity: 0.06;
+  animation-delay: -8s; }
+/* purple accent — the one hue allowed on the B/W canvas */
+.b3 { width: 660px; height: 660px; bottom: -300px; left: 30%;
+  background: radial-gradient(circle, #8b5cf6, transparent 70%); opacity: 0.12;
+  animation-delay: -14s; animation-duration: 30s; }
+/* slow white sheen sweeping across the page */
+.aurora::after {
+  content: ""; position: absolute; inset: -20% -10%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.05) 50%, transparent 62%);
+  background-size: 280% 280%;
+  animation: sheenmove 26s linear infinite;
+}
+@keyframes sheenmove {
+  from { background-position: 0% 0%; }
+  to   { background-position: 200% 200%; }
+}
 @keyframes drift {
   from { transform: translate(0, 0) scale(1); }
   to   { transform: translate(40px, -30px) scale(1.12); }
@@ -193,6 +207,21 @@ h1 {
   box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .demo-frame img { display: block; width: 100%; height: auto; }
+
+/* ---------- ai agents ---------- */
+.agents { max-width: var(--maxw); margin: 0 auto; padding: 56px 28px 20px; }
+.agent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.agent-chip {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 16px; transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease);
+}
+.agent-chip:hover { transform: translateY(-3px); background: var(--glass-2);
+  border-color: rgba(124, 108, 255, 0.4); }
+.agent-chip b { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.agent-chip span { display: block; margin-top: 5px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.agent-note { text-align: center; color: var(--muted); font-size: 15px; max-width: 52em; margin: 28px auto 0; line-height: 1.6; }
+@media (max-width: 920px) { .agent-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .agent-grid { grid-template-columns: 1fr; } }
 
 /* ---------- features ---------- */
 .features { max-width: var(--maxw); margin: 0 auto; padding: 60px 28px; }
@@ -379,7 +408,7 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
-  .blob, .hero-app, .hero-app .window, h1, .hero-copy > *, .hero-app.in .tile { animation: none !important; }
+  .blob, .aurora::after, .hero-app, .hero-app .window, h1, .hero-copy > *, .hero-app.in .tile { animation: none !important; }
   html { scroll-behavior: auto; }
 }
 

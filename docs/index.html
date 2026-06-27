@@ -3,9 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>TerminalPad — Terminal &amp; AI CLI Launcher for macOS · Claude Code, Gemini, Ollama</title>
-<meta name="description" content="Launch Claude Code, Gemini CLI, Ollama, OpenCode and every CLI tool you've installed — instantly. TerminalPad is the home screen for your terminal on macOS: built for AI agents, ready for every CLI. Free and open source." />
-<meta name="keywords" content="terminal launcher, CLI launcher macOS, AI CLI launcher, AI agent launcher, command line launcher, Claude Code launcher, Gemini CLI launcher, Ollama launcher, OpenCode launcher, developer launcher mac, launch AI agents, TerminalPad" />
+<title>TerminalPad — AI Agent &amp; CLI Launcher for Mac · Claude Code, Gemini, Ollama</title>
+<meta name="description" content="Launch every AI agent and CLI on your Mac in one keystroke. TerminalPad is the home screen for AI coding agents — Claude Code, Gemini CLI, Ollama, OpenCode, Cursor, Copilot — and every command-line tool you've installed. Free, open source, built by Abhisar Singh." />
+<meta name="keywords" content="AI agent launcher, AI agent launcher mac, launch AI agents, run AI agents, AI coding agent, AI coding assistant, agentic CLI, AI CLI launcher, AI agent manager, AI agent desktop app, terminal launcher, CLI launcher macOS, Claude Code launcher, Gemini CLI launcher, Ollama launcher, OpenCode launcher, Cursor agent, GitHub Copilot CLI, AI developer tools, AI for the terminal, Abhisar Singh, TerminalPad" />
+<meta name="news_keywords" content="AI agents, AI CLI, Claude Code, Gemini CLI, Ollama, macOS, developer tools" />
+<!-- geo -->
+<meta name="geo.region" content="IN" />
+<meta name="geo.placename" content="India" />
+<meta name="language" content="en" />
 <meta name="author" content="Abhisar Singh" />
 <meta name="creator" content="Abhisar Singh" />
 <meta name="publisher" content="Abhisar Singh" />
@@ -60,15 +65,26 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "TerminalPad",
-  "alternateName": "TerminalPad — Terminal & AI CLI Launcher for macOS",
+  "alternateName": ["AI Agent Launcher for Mac", "TerminalPad — AI Agent & CLI Launcher for macOS"],
   "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "AI Agent Launcher",
   "operatingSystem": "macOS 14.0",
-  "description": "TerminalPad is the home screen for your terminal on Mac. Built for AI agents like Claude Code, Gemini CLI, Ollama and OpenCode, and ready for every other CLI tool you've installed — launch any of them with one shortcut.",
-  "keywords": "terminal launcher, CLI launcher, AI CLI launcher, AI agent launcher, Claude Code, Gemini CLI, Ollama, OpenCode, macOS",
+  "description": "TerminalPad is the home screen for AI coding agents on Mac. Launch Claude Code, Gemini CLI, Ollama, OpenCode, Cursor, GitHub Copilot CLI and every command-line tool you've installed with a single keystroke — the right mode and flags already set.",
+  "featureList": [
+    "Launch any AI agent or CLI with one keystroke (⌥⌘Space)",
+    "Curated AI agents: Claude Code, Gemini CLI, Ollama, OpenCode, Cursor, Copilot, Antigravity",
+    "Per-mode variants so you never memorize a flag",
+    "Auto-discovers every CLI installed via Homebrew, npm, pipx, cargo, go, bun",
+    "Native SwiftUI, universal binary, no telemetry"
+  ],
+  "keywords": "AI agent launcher, launch AI agents, AI coding agent, agentic CLI, AI CLI launcher, Claude Code, Gemini CLI, Ollama, OpenCode, Cursor, GitHub Copilot, terminal launcher, macOS",
   "url": "https://git-abhisar-singh.github.io/TerminalPad/",
   "downloadUrl": "https://github.com/git-abhisar-singh/TerminalPad",
-  "author": { "@type": "Person", "name": "Abhisar Singh" },
+  "softwareVersion": "1.0.0",
+  "author": { "@type": "Person", "name": "Abhisar Singh", "url": "https://vroq.in" },
+  "creator": { "@type": "Person", "name": "Abhisar Singh" },
   "license": "https://github.com/git-abhisar-singh/TerminalPad/blob/main/LICENSE",
+  "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
 }
 </script>
@@ -126,6 +142,11 @@
     },
     {
       "@type": "Question",
+      "name": "How do I launch AI agents on my Mac?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Install TerminalPad, press Option-Command-Space, and every AI agent you have shows up as a tile. Click one or type and hit Enter, and it opens in a new terminal window running the exact command — so you launch any AI agent on macOS in a single keystroke, without remembering commands or flags." }
+    },
+    {
+      "@type": "Question",
       "name": "Is TerminalPad free?",
       "acceptedAnswer": { "@type": "Answer", "text": "Yes. TerminalPad is completely free and open source under the MIT license. There are no accounts, no telemetry and no analytics." }
     },
@@ -166,6 +187,7 @@
       <span>TerminalPad</span>
     </a>
     <nav class="nav-links" aria-label="Primary">
+      <a href="#agents">AI Agents</a>
       <a href="#features">Features</a>
       <a href="#install">Install</a>
       <a href="#how">How it works</a>
@@ -238,6 +260,25 @@
   <div class="demo-frame reveal">
     <img src="assets/demo-full.gif" alt="TerminalPad full demo — launching agents, searching, and adding tools" loading="lazy" />
   </div>
+</section>
+
+<!-- ai agents (content for AI-agent search + GEO) -->
+<section id="agents" class="agents">
+  <div class="section-head reveal">
+    <h2>The launcher built for AI agents.</h2>
+    <p>TerminalPad is a home screen for AI coding agents on macOS. Every agent you run from the terminal becomes a tile you can launch in one keystroke — with the right mode and flags already set.</p>
+  </div>
+  <div class="agent-grid reveal">
+    <div class="agent-chip"><b>Claude Code</b><span>Normal · Skip permissions · Continue · Background</span></div>
+    <div class="agent-chip"><b>Gemini CLI</b><span>Normal · YOLO · Auto-edit · Plan</span></div>
+    <div class="agent-chip"><b>Ollama</b><span>Run any local LLM</span></div>
+    <div class="agent-chip"><b>OpenCode</b><span>Open-source coding agent</span></div>
+    <div class="agent-chip"><b>Cursor</b><span>cursor-agent or the app</span></div>
+    <div class="agent-chip"><b>GitHub Copilot CLI</b><span>Copilot in the terminal</span></div>
+    <div class="agent-chip"><b>Antigravity</b><span>Google's agentic CLI</span></div>
+    <div class="agent-chip"><b>Codex · Aider · Goose · Crush</b><span>and more, auto-detected</span></div>
+  </div>
+  <p class="agent-note reveal">New AI agent on your machine? TerminalPad finds it automatically, or add it in seconds. One keystroke (<kbd>⌥⌘Space</kbd>) gets you into any AI agent or CLI — no commands to memorize.</p>
 </section>
 
 <!-- features -->
@@ -329,6 +370,10 @@ cd TerminalPad
     <details class="faq-item reveal">
       <summary>Which AI agents does it support?</summary>
       <p>Curated tiles for Claude Code, Gemini CLI, Ollama, OpenCode, Antigravity, GitHub Copilot CLI, Cursor and more — each with per-mode variants. It also auto-discovers any other CLI you've installed via Homebrew, npm, pipx, cargo, go or bun.</p>
+    </details>
+    <details class="faq-item reveal">
+      <summary>How do I launch AI agents on my Mac?</summary>
+      <p>Install TerminalPad, press <kbd>⌥⌘Space</kbd>, and every AI agent you have shows up as a tile. Click one (or type and hit Enter) and it opens in a new terminal window running the exact command — so you launch any AI agent on macOS in a single keystroke, without remembering commands or flags.</p>
     </details>
     <details class="faq-item reveal">
       <summary>Is it free?</summary>
