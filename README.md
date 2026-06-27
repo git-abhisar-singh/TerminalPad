@@ -162,6 +162,7 @@ Info.plist
 - [Privacy](PRIVACY.md) — no telemetry, no analytics, no accounts
 - [Changelog](CHANGELOG.md)
 - [Discussions](https://github.com/git-abhisar-singh/TerminalPad/discussions) · [Issues](https://github.com/git-abhisar-singh/TerminalPad/issues)
+- Contact: [abhisar.s.work@gmail.com](mailto:abhisar.s.work@gmail.com)
 
 ## License
 

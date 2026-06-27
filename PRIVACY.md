@@ -48,4 +48,5 @@ Any change to this policy will be reflected in this file and the project's
 ## Contact
 
 Questions? Open an issue on
-[GitHub](https://github.com/git-abhisar-singh/TerminalPad/issues).
+[GitHub](https://github.com/git-abhisar-singh/TerminalPad/issues) or email
+**abhisar.s.work@gmail.com**.

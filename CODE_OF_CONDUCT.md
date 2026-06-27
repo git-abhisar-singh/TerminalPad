@@ -44,10 +44,10 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainers by opening a confidential
-[security advisory](https://github.com/git-abhisar-singh/TerminalPad/security/advisories/new)
-or a private report through GitHub. All complaints will be reviewed and
-investigated promptly and fairly.
+reported to the maintainer at **abhisar.s.work@gmail.com**, or by opening a
+confidential
+[security advisory](https://github.com/git-abhisar-singh/TerminalPad/security/advisories/new).
+All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 

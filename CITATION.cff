@@ -5,6 +5,7 @@ type: software
 authors:
   - given-names: Abhisar
     family-names: Singh
+    email: "abhisar.s.work@gmail.com"
     website: "https://vroq.in"
 repository-code: "https://github.com/git-abhisar-singh/TerminalPad"
 url: "https://git-abhisar-singh.github.io/TerminalPad/"

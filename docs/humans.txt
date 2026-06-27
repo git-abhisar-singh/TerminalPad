@@ -1,5 +1,6 @@
 /* TEAM */
   Creator: Abhisar Singh
+  Contact: abhisar.s.work@gmail.com
   Site: https://vroq.in
   X: @helloabhisar
   GitHub: @git-abhisar-singh

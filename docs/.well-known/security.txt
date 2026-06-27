@@ -1,3 +1,4 @@
+Contact: mailto:abhisar.s.work@gmail.com
 Contact: https://github.com/git-abhisar-singh/TerminalPad/security/advisories/new
 Policy: https://github.com/git-abhisar-singh/TerminalPad/blob/main/SECURITY.md
 Preferred-Languages: en

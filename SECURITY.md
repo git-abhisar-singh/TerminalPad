@@ -15,8 +15,8 @@ TerminalPad is distributed as source. You build and install it yourself with
 
 Report privately through GitHub's
 [**Report a vulnerability**](https://github.com/git-abhisar-singh/TerminalPad/security/advisories/new)
-form (Security → Advisories). This keeps the report confidential until a fix
-ships.
+form (Security → Advisories), or email **abhisar.s.work@gmail.com**. Either way
+the report stays confidential until a fix ships.
 
 Please include:
 
