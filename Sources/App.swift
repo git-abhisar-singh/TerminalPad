@@ -138,6 +138,15 @@ struct WindowConfigurator: NSViewRepresentable {
             tb.showsBaselineSeparator = false
             win.toolbar = tb
             win.toolbarStyle = .unified
+
+            // A transparent Spotlight-style panel must never go full screen (the
+            // titlebar/toolbar collapse and the clear panel fills the display).
+            // Disable full screen + zoom so it stays a floating, resizable launcher.
+            win.collectionBehavior.remove(.fullScreenPrimary)
+            win.collectionBehavior.insert(.fullScreenNone)
+            win.standardWindowButton(.zoomButton)?.isEnabled = false
+            if win.styleMask.contains(.fullScreen) { win.toggleFullScreen(nil) }
+
             win.invalidateShadow()
         }
         return v
