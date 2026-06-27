@@ -18,6 +18,16 @@ A free, open-source **terminal launcher for macOS**. Click a tile (or type and h
 <a href="https://github.com/git-abhisar-singh/TerminalPad/stargazers"><img src="https://img.shields.io/github/stars/git-abhisar-singh/TerminalPad?style=flat&color=000000" alt="Stars" /></a>
 </p>
 
+**[Website](https://git-abhisar-singh.github.io/TerminalPad/)** ·
+[Install](#install) ·
+[Features](#features) ·
+[AI agents](#supported-agents) ·
+[Changelog](CHANGELOG.md) ·
+[Releases](https://github.com/git-abhisar-singh/TerminalPad/releases) ·
+[Contributing](CONTRIBUTING.md) ·
+[Privacy](PRIVACY.md) ·
+[Discussions](https://github.com/git-abhisar-singh/TerminalPad/discussions)
+
 </div>
 
 ---
@@ -34,6 +44,23 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 - **Everywhere — one shortcut, from any app.** `⌥⌘Space` summons it over whatever you're doing. Menu-bar resident, always a keystroke away.
 - **Native — looks like Mac, because it is.** Pure SwiftUI with real [Simple Icons](https://simpleicons.org) brand logos. Liquid Glass on macOS 26, a clean dark panel everywhere else.
 - **Yours — bend it to your setup.** Plain JSON at `~/.config/terminalpad/agents.json` — add agents, modes, working dirs. Hit reload, no rebuild.
+
+## Supported agents
+
+TerminalPad ships curated tiles for the AI coding agents people actually run from the terminal — each with its real logo and one tile per mode:
+
+| Agent | Modes |
+| ----- | ----- |
+| **Claude Code** | Normal · Skip permissions · Continue · Background |
+| **Gemini CLI** | Normal · YOLO · Auto-edit · Plan |
+| **Ollama** | Run any local model |
+| **OpenCode** | Open-source coding agent |
+| **Cursor** | `cursor-agent` or the app |
+| **GitHub Copilot CLI** | Copilot in the terminal |
+| **Antigravity** | Google's agentic CLI |
+| **Codex · Aider · Goose · Crush · Qwen · Amp · Cline · OpenHands · Grok** | Auto-detected when installed |
+
+Anything else on your `PATH` (docker, ffmpeg, gh, kubectl, scrcpy, …) is **auto-discovered** and added too. New AI agent on your machine? TerminalPad finds it, or you add it in seconds.
 
 ## Screenshots
 
