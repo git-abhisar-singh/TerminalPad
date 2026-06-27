@@ -1,0 +1,14 @@
+{
+  "name": "TerminalPad",
+  "short_name": "TerminalPad",
+  "description": "A Launchpad + Spotlight for your terminal agents and CLI tools on macOS.",
+  "start_url": "/TerminalPad/",
+  "display": "standalone",
+  "background_color": "#050506",
+  "theme_color": "#050506",
+  "icons": [
+    { "src": "assets/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icon.png", "sizes": "256x256", "type": "image/png" }
+  ]
+}

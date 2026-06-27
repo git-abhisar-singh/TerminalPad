@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://git-abhisar-singh.github.io/TerminalPad/sitemap.xml
