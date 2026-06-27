@@ -22,16 +22,24 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 - **Spotlight search** — opens focused. Type to filter, `↑`/`↓` to move, `Enter` launches the top match, `Esc` clears/closes.
 - **Per-mode tiles** — `claude` vs `claude --dangerously-skip-permissions` vs `claude -c` each get their own icon and color.
 - **Real logos** — fetched from [Simple Icons](https://simpleicons.org), rendered white on glass. ~50 ship bundled; unknown tools fetch on demand and cache.
-- **Auto-discovery** — scans `brew leaves` + `~/.local/bin` and adds every installed CLI tool with a matched logo (or a clean monogram fallback).
+- **Auto-discovery** — scans `brew leaves`, npm globals, pipx, and `cargo`/`go`/`bun`/`~/.local/bin`, adding every installed CLI with a matched logo (or a clean monogram fallback). Results are cached, so the grid is instant on launch and rescans in the background.
 - **JSON config** — edit `~/.config/agentpad/agents.json` to add agents/modes. No rebuild.
 
 ## Install
 
-Requires macOS 26 (Tahoe) and the Swift toolchain (`xcode-select --install` is enough — no full Xcode needed).
+Requires macOS 26 (Tahoe) and the Swift toolchain — `xcode-select --install` is enough, no full Xcode needed.
 
 ```bash
-git clone https://github.com/<you>/agentpad.git
-cd agentpad
+git clone https://github.com/git-abhisar-singh/AgentPad.git
+cd AgentPad
+./install.sh
+```
+
+`install.sh` builds the app and drops it in `/Applications`. Because you compile it yourself, there's no Gatekeeper warning — no Apple Developer account or signing required.
+
+Prefer to do it by hand?
+
+```bash
 ./build.sh
 mv AgentPad.app /Applications/
 ```
@@ -72,7 +80,7 @@ First time you launch an agent, macOS asks **"AgentPad wants to control Terminal
 
 - **Launch** — runs `osascript` to `tell application "Terminal" to do script "<command>"` in a login shell, so your normal `PATH` resolves the binary.
 - **Logos** — `logos.py` pulls black SVGs from Simple Icons, rasterizes via macOS `qlmanage`, and keys white→transparent. At runtime `LogoStore` does the same in Swift (CoreImage) for tools discovered later.
-- **Discovery** — `Discovery.swift` reads `brew leaves`, resolves each formula to its real binary, skips libraries, and builds a tile per tool.
+- **Discovery** — `Discovery.swift` runs `brew leaves`, npm, and pipx in parallel, resolves each formula to its real binary, skips libraries, and builds a tile per tool. The last scan is cached to `~/.config/agentpad/discovered.json` and painted instantly while a fresh scan runs in the background.
 - **Build** — `build.sh` compiles the SwiftUI sources with `swiftc` and assembles the `.app` bundle by hand (no Xcode project).
 
 ## Project layout
@@ -87,7 +95,8 @@ Sources/
   Launcher.swift     Terminal launcher
 Resources/logos/     bundled brand logos (PNG, white on transparent)
 build.sh             compile + bundle
-makeicon.py          app icon generator
+install.sh           build + install to /Applications
+make_icon.py         app icon + menu-bar template generator
 logos.py             logo fetcher
 Info.plist
 ```

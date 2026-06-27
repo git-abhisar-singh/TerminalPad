@@ -436,15 +436,28 @@ struct ContentView: View {
     }
 
     private func loadDiscovered() async {
+        // 1. Paint the last scan instantly (0ms) so tiles never start empty.
+        if discovered.isEmpty {
+            let cached = DiscoveryCache.load()
+            if !cached.isEmpty {
+                discovered = cached
+                logos.preload(cached.compactMap { $0.logo })
+            }
+        }
+        // 2. Rescan off-main, update + persist only if the tool set actually changed.
         let curatedCmds = Set(curated.flatMap { $0.variants.map { v in
             v.command.split(separator: " ").first.map(String.init) ?? v.command } })
         let found = await Task.detached(priority: .userInitiated) {
             Discovery.tools(excluding: curatedCmds)
         }.value
+        let changed = found.map(\.name) != discovered.map(\.name)
         await MainActor.run {
-            discovered = found
-            logos.preload(found.compactMap { $0.logo })
+            if changed {
+                discovered = found
+                logos.preload(found.compactMap { $0.logo })
+            }
         }
+        if changed { DiscoveryCache.save(found) }
     }
 }
 

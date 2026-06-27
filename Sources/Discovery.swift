@@ -56,37 +56,56 @@ enum Discovery {
 
     /// Returns discovered tools as Agents, excluding any command already covered by curated agents.
     static func tools(excluding curated: Set<String>) -> [Agent] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+
+        // The 3 subprocess scans (brew ~1.2s, npm ~0.4s, pipx ~0.1s) are independent —
+        // run them concurrently so the scan costs max(...) not sum(...).
+        let group = DispatchGroup()
+        let lock = NSLock()
         var names: [String] = []
+        func add(_ items: [String]) { lock.lock(); names += items; lock.unlock() }
 
         // 1. Homebrew installed-on-request formulae
-        let brew = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
-            .first { FileManager.default.isExecutableFile(atPath: $0) }
-        if let brew {
-            names += run(brew, ["leaves"]).split(whereSeparator: \.isNewline).map(String.init)
+        if let brew = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+            group.enter()
+            DispatchQueue.global().async {
+                add(run(brew, ["leaves"]).split(whereSeparator: \.isNewline).map(String.init))
+                group.leave()
+            }
         }
 
-        // 2. user-local / language bins (cargo, go, bun, etc.)
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        for dir in ["\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin"] {
-            if let items = try? FileManager.default.contentsOfDirectory(atPath: dir) { names += items }
-        }
-
-        // 3. npm global packages
+        // 2. npm global packages
         if let npm = ["/opt/homebrew/bin/npm", "/usr/local/bin/npm"]
             .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
-            names += run(npm, ["ls", "-g", "--depth=0", "--parseable"])
-                .split(whereSeparator: \.isNewline)
-                .compactMap { $0.split(separator: "/").last.map(String.init) }
-                .filter { $0 != "lib" && !$0.hasPrefix("@") }
+            group.enter()
+            DispatchQueue.global().async {
+                add(run(npm, ["ls", "-g", "--depth=0", "--parseable"])
+                    .split(whereSeparator: \.isNewline)
+                    .compactMap { $0.split(separator: "/").last.map(String.init) }
+                    .filter { $0 != "lib" && !$0.hasPrefix("@") })
+                group.leave()
+            }
         }
 
-        // 4. pipx apps
+        // 3. pipx apps
         if let pipx = ["/opt/homebrew/bin/pipx", "\(home)/.local/bin/pipx"]
             .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
-            names += run(pipx, ["list", "--short"])
-                .split(whereSeparator: \.isNewline)
-                .compactMap { $0.split(separator: " ").first.map(String.init) }
+            group.enter()
+            DispatchQueue.global().async {
+                add(run(pipx, ["list", "--short"])
+                    .split(whereSeparator: \.isNewline)
+                    .compactMap { $0.split(separator: " ").first.map(String.init) })
+                group.leave()
+            }
         }
+
+        // 4. user-local / language bins (cargo, go, bun, etc.) — cheap dir reads, do inline
+        for dir in ["\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin"] {
+            if let items = try? FileManager.default.contentsOfDirectory(atPath: dir) { add(items) }
+        }
+
+        group.wait()
 
         var seen = Set<String>()
         var out: [Agent] = []

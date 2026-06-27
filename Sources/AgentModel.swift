@@ -34,6 +34,26 @@ struct AgentConfig: Codable {
     var agents: [Agent]
 }
 
+/// Disk cache of the last discovery scan so tiles show instantly on launch
+/// (stale-while-revalidate: render cache now, rescan in the background, update if changed).
+enum DiscoveryCache {
+    static var file: URL { ConfigStore.dir.appendingPathComponent("discovered.json") }
+
+    static func load() -> [Agent] {
+        guard let data = try? Data(contentsOf: file),
+              let cfg = try? JSONDecoder().decode(AgentConfig.self, from: data) else { return [] }
+        return cfg.agents
+    }
+
+    static func save(_ agents: [Agent]) {
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.sortedKeys]
+        guard let data = try? enc.encode(AgentConfig(agents: agents)) else { return }
+        try? FileManager.default.createDirectory(at: ConfigStore.dir, withIntermediateDirectories: true)
+        try? data.write(to: file)
+    }
+}
+
 enum ConfigStore {
     static var dir: URL {
         FileManager.default.homeDirectoryForCurrentUser
