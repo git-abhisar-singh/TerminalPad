@@ -4,11 +4,11 @@
 
 # TerminalPad
 
-### The home screen for AI coding agents on Mac.
+### The home screen for your terminal on Mac.
 
-**Launch Claude Code, Gemini CLI, Ollama, OpenCode and every AI coding CLI instantly — one shortcut, no commands to remember.**
+**Every AI agent. Every CLI. One keystroke.** Built for AI coding agents — Claude Code, Gemini CLI, Ollama, OpenCode — and ready for every other CLI tool you've installed.
 
-A free, open-source **AI CLI launcher for macOS**. Click a tile (or type and hit Enter) and it launches in a new Terminal window — Claude Code, Gemini CLI, OpenCode, Antigravity, Ollama, and every CLI tool you've installed.
+A free, open-source **terminal launcher for macOS**. Click a tile (or type and hit Enter) and it launches in a new Terminal window — your agents, plus docker, ffmpeg, gh, kubectl, and everything else.
 
 </div>
 
@@ -16,7 +16,7 @@ A free, open-source **AI CLI launcher for macOS**. Click a tile (or type and hit
 
 ## Why
 
-You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollama run …` into a terminal. TerminalPad is the **launcher for AI coding agents**: it turns those into a searchable grid, so getting into the right agent is one shortcut away instead of a remembered command. Each agent gets its real logo and one tile per mode. Every other CLI you've installed (scrcpy, ffmpeg, gh, docker, …) is auto-discovered and added too.
+You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollama run …`, `docker compose up`, `kubectl get pods` into a terminal. TerminalPad turns your whole toolbox into a searchable grid, so getting into the right tool is one shortcut away instead of a remembered command. AI agents are first-class — each gets its real logo and one tile per mode — and every other CLI you've installed (scrcpy, ffmpeg, gh, docker, …) is auto-discovered and added too.
 
 ## Features
 
