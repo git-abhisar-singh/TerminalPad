@@ -23,9 +23,11 @@ struct Agent: Codable, Identifiable, Hashable {
     var logo: String? = nil   // logo slug -> Resources/logos/<slug>.png (else monogram)
     var aliases: [String] = [] // extra search keywords
     var cwd: String? = nil     // working directory to launch in
+    var symbol: String? = nil  // SF Symbol name, used when there's no logo image
+    var colorIcon: Bool = false // render `logo` in full colour (a user-picked custom image)
     var discovered: Bool = false
 
-    enum CodingKeys: String, CodingKey { case name, icon, color, variants, logo, aliases, cwd }
+    enum CodingKeys: String, CodingKey { case name, icon, color, variants, logo, aliases, cwd, symbol, colorIcon }
 
     var swiftColor: Color { Color(hex: color) }
 }

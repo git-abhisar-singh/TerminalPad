@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var logos = LogoStore.shared
@@ -129,6 +130,13 @@ struct ContentView: View {
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                     Button("") { withAnimation(.easeInOut(duration: 0.2)) { showSettings = false } }
                         .keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0)
+                } else if showAddAgent {
+                    pageHeader { withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = false } }
+                    AddAgentPage(logos: logos) { added in
+                        withAnimation(.easeInOut(duration: 0.2)) { showAddAgent = false }
+                        if added { reload() }
+                    }
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 } else {
                     searchRow
                     content
@@ -162,9 +170,6 @@ struct ContentView: View {
         .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
             HelpSheet(title: helpTitle, text: helpText ?? "") { helpText = nil }
         }
-        .sheet(isPresented: $showAddAgent) {
-            AddAgentSheet { reload() }
-        }
         .overlay(alignment: .bottom) {
             if let t = launchToast {
                 Label("Launching \(t)…", systemImage: "terminal")
@@ -184,7 +189,7 @@ struct ContentView: View {
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
         // Title only — this region overlaps the draggable titlebar, so NO buttons here.
-        Text(showSettings ? "Settings" : "TerminalPad")
+        Text(showSettings ? "Settings" : showAddAgent ? "Add Agent" : "TerminalPad")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
@@ -223,6 +228,25 @@ struct ContentView: View {
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 12)
+    }
+
+    // Reusable back-button header (matches the Settings page).
+    private func pageHeader(onBack: @escaping () -> Void) -> some View {
+        HStack {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .frame(width: 38, height: 38)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(.primary.opacity(0.12), lineWidth: 1))
+                    .contentShape(RoundedRectangle(cornerRadius: 11))
+            }
+            .buttonStyle(.plain).foregroundStyle(.primary).help("Back")
+            Spacer()
+            Button("") { onBack() }.keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0)
+        }
+        .padding(.horizontal, 20).padding(.bottom, 12)
     }
 
     private var searchField: some View {
@@ -496,8 +520,19 @@ struct AgentIcon: View {
             RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
                 .stroke((dark ? Color.white : Color.black).opacity(0.12), lineWidth: 1)
             if let img = logos.image(agent.logo) {
-                Image(nsImage: img).renderingMode(.template).resizable().scaledToFit()
-                    .padding(size * 0.24)
+                if agent.colorIcon {
+                    // user-picked custom image — keep its real colors
+                    Image(nsImage: img).resizable().scaledToFit()
+                        .padding(size * 0.16)
+                        .clipShape(RoundedRectangle(cornerRadius: size * 0.18, style: .continuous))
+                } else {
+                    Image(nsImage: img).renderingMode(.template).resizable().scaledToFit()
+                        .padding(size * 0.24)
+                        .foregroundStyle(mark)
+                }
+            } else if let symbol = agent.symbol, !symbol.isEmpty {
+                Image(systemName: symbol)
+                    .font(.system(size: size * 0.40, weight: .medium))
                     .foregroundStyle(mark)
             } else {
                 Text(agent.icon)
@@ -727,81 +762,144 @@ struct HelpSheet: View {
     }
 }
 
-/// Quick form to add a tool or agent by hand — name + command, optional color/aliases.
-/// Saves straight into the config and triggers a reload.
-struct AddAgentSheet: View {
-    var onAdded: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var logos = LogoStore.shared
+/// Full-page editor to add a tool or agent. The icon is auto-detected from the command
+/// (brand logo via Simple Icons); if none is found you can pick a custom image or an SF Symbol.
+struct AddAgentPage: View {
+    @ObservedObject var logos: LogoStore
+    var onDone: (_ added: Bool) -> Void
+
+    enum IconMode: String, CaseIterable { case auto = "Auto", image = "Custom", symbol = "Symbol" }
 
     @State private var name = ""
     @State private var command = ""
     @State private var aliases = ""
     @State private var color = "#5B8DEF"
+    @State private var iconMode: IconMode = .auto
+    @State private var customSlug: String? = nil
+    @State private var symbolName = "terminal"
 
     private var base: String { command.split(separator: " ").first.map(String.init) ?? command }
     private var mono: String { String(name.prefix(2)).uppercased() }
+    private var autoFound: Bool { !base.isEmpty && logos.image(base) != nil }
     private var canAdd: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
         !command.trimmingCharacters(in: .whitespaces).isEmpty
     }
+
     private var previewAgent: Agent {
-        Agent(name: name.isEmpty ? "New Tool" : name, icon: mono.isEmpty ? "?" : mono,
-              color: color.hasPrefix("#") ? color : "#5B8DEF",
-              variants: [Variant(label: "Run", command: command)], logo: base.isEmpty ? nil : base)
+        var a = Agent(name: name.isEmpty ? "New Tool" : name, icon: mono.isEmpty ? "?" : mono,
+                      color: color.hasPrefix("#") ? color : "#5B8DEF", variants: [Variant(label: "Run", command: command)])
+        switch iconMode {
+        case .auto:   a.logo = base.isEmpty ? nil : base
+        case .image:  a.logo = customSlug; a.colorIcon = true
+        case .symbol: a.symbol = symbolName
+        }
+        return a
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Add a Tool or Agent").font(.system(size: 14, weight: .semibold))
-                Spacer()
-                Button("Cancel", action: { dismiss() }).keyboardShortcut(.cancelAction)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            Divider()
+        ScrollView {
+            VStack(spacing: 24) {
+                // Live preview
+                VStack(spacing: 10) {
+                    AgentIcon(agent: previewAgent, logos: logos, size: 96)
+                    Text(name.isEmpty ? "New Tool" : name)
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .padding(.top, 4)
 
-            HStack(alignment: .top, spacing: 18) {
-                AgentIcon(agent: previewAgent, logos: logos, size: 84)
-                    .padding(.top, 4)
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(spacing: 14) {
                     field("Name", "e.g. My Server", $name)
-                    field("Command", "e.g. ssh prod or claude --resume", $command, mono: true)
-                    field("Aliases (optional)", "comma-separated, e.g. srv, prod", $aliases)
-                    HStack(spacing: 8) {
-                        Text("Color").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                            .frame(width: 64, alignment: .leading)
+                    field("Command", "e.g. ssh prod  ·  claude --resume  ·  aider", $command, mono: true)
+                    field("Aliases", "optional · comma-separated, e.g. srv, prod", $aliases)
+                    HStack(spacing: 10) {
+                        label("Color")
                         TextField("#5B8DEF", text: $color).textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12, design: .monospaced)).frame(width: 110)
-                        RoundedRectangle(cornerRadius: 5).fill(Color(hex: color)).frame(width: 22, height: 22)
+                            .font(.system(size: 13, design: .monospaced)).frame(width: 120)
+                        RoundedRectangle(cornerRadius: 6).fill(Color(hex: color)).frame(width: 26, height: 26)
+                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.15)))
+                        Spacer()
+                    }
+
+                    // Icon source
+                    HStack(alignment: .top, spacing: 10) {
+                        label("Icon")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Picker("", selection: $iconMode) {
+                                ForEach(IconMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                            }
+                            .pickerStyle(.segmented).labelsHidden().frame(width: 260)
+
+                            switch iconMode {
+                            case .auto:
+                                Label(autoFound ? "Auto-detected from the command"
+                                                 : "No brand logo found — uses initials, or pick Custom / Symbol",
+                                      systemImage: autoFound ? "checkmark.circle.fill" : "info.circle")
+                                    .font(.caption)
+                                    .foregroundStyle(autoFound ? .green : .secondary)
+                            case .image:
+                                HStack(spacing: 10) {
+                                    Button("Choose Image…") { pickImage() }
+                                    if customSlug != nil {
+                                        Label("Custom image set", systemImage: "checkmark.circle.fill")
+                                            .font(.caption).foregroundStyle(.green)
+                                    }
+                                }
+                            case .symbol:
+                                HStack(spacing: 8) {
+                                    TextField("SF Symbol name, e.g. server.rack", text: $symbolName)
+                                        .textFieldStyle(.roundedBorder).font(.system(size: 13, design: .monospaced))
+                                        .frame(width: 240)
+                                    Link("Browse", destination: URL(string: "https://developer.apple.com/sf-symbols/")!)
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                        Spacer()
                     }
                 }
-            }
-            .padding(18)
+                .frame(maxWidth: 520)
 
-            Spacer(minLength: 0)
-            Divider()
-            HStack {
+                HStack(spacing: 12) {
+                    Button("Cancel") { onDone(false) }
+                    Button("Add Agent") { add() }
+                        .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(!canAdd)
+                }
+                .padding(.top, 4)
                 Text("Saved to ~/.config/terminalpad/agents.json")
-                    .font(.caption).foregroundStyle(.tertiary)
-                Spacer()
-                Button("Add") { add() }
-                    .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
-                    .disabled(!canAdd)
+                    .font(.caption2).foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, 28).padding(.bottom, 28)
+            .frame(maxWidth: .infinity)
         }
-        .frame(width: 520, height: 360)
+        .onChange(of: command) { _, _ in if iconMode == .auto { logos.request(base) } }
+        .onAppear { logos.request(base) }
+    }
+
+    private func label(_ t: String) -> some View {
+        Text(t).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            .frame(width: 62, alignment: .leading)
     }
 
     @ViewBuilder private func field(_ label: String, _ placeholder: String,
                                     _ text: Binding<String>, mono: Bool = false) -> some View {
-        HStack(spacing: 8) {
-            Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                .frame(width: 64, alignment: .leading)
+        HStack(spacing: 10) {
+            self.label(label)
             TextField(placeholder, text: text)
                 .textFieldStyle(.roundedBorder)
-                .font(.system(size: 12, design: mono ? .monospaced : .default))
+                .font(.system(size: 13, design: mono ? .monospaced : .default))
+        }
+    }
+
+    private func pickImage() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .jpeg, .image, .icns]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.prompt = "Use Image"
+        if panel.runModal() == .OK, let url = panel.url, let slug = logos.addCustom(from: url) {
+            customSlug = slug
+            iconMode = .image
         }
     }
 
@@ -811,13 +909,17 @@ struct AddAgentSheet: View {
         guard !n.isEmpty, !cmd.isEmpty else { return }
         let al = aliases.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let c = color.hasPrefix("#") ? color : "#5B8DEF"
+        var a = Agent(name: n, icon: String(n.prefix(2)).uppercased(), color: c,
+                      variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: c)], aliases: al)
+        switch iconMode {
+        case .auto:   a.logo = cmd.split(separator: " ").first.map(String.init)
+        case .image:  a.logo = customSlug; a.colorIcon = true
+        case .symbol: a.symbol = symbolName.trimmingCharacters(in: .whitespaces)
+        }
         var agents = ConfigStore.load()
-        agents.append(Agent(name: n, icon: String(n.prefix(2)).uppercased(), color: c,
-                            variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: c)],
-                            logo: cmd.split(separator: " ").first.map(String.init), aliases: al))
+        agents.append(a)
         ConfigStore.save(agents)
-        onAdded()
-        dismiss()
+        onDone(true)
     }
 }
 

@@ -52,6 +52,19 @@ final class LogoStore: ObservableObject {
         }
     }
 
+    /// Import a user-picked image as a custom icon: write it to the logo cache under a fresh
+    /// slug, register it in memory, and return the slug to store on the agent (`colorIcon = true`).
+    func addCustom(from url: URL) -> String? {
+        guard let img = NSImage(contentsOf: url) else { return nil }
+        let slug = "custom-" + UUID().uuidString.prefix(8).lowercased()
+        if let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+           let png = rep.representation(using: .png, properties: [:]) {
+            try? png.write(to: Self.cacheDir.appendingPathComponent("\(slug).png"))
+        }
+        images[slug] = img
+        return slug
+    }
+
     /// Lazily resolve one logo (bundled → cache → online fetch). Call from a tile's `.onAppear`
     /// so only visible/searched tools hit the network, and failed slugs are never retried.
     func request(_ slug: String?) {
