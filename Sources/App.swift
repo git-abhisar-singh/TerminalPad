@@ -67,12 +67,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupMenuBar() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let img = AppImages.menubar { item.button?.image = img }
-        else { item.button?.title = "AP" }
+        if let img = AppImages.menubar {
+            img.isTemplate = true            // adapt to light / dark / translucent menu bar
+            item.button?.image = img
+            item.button?.image?.isTemplate = true
+        } else {
+            item.button?.title = "TP"
+        }
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Open TerminalPad", action: #selector(openMain), keyEquivalent: "")
+        menu.autoenablesItems = false        // we set valid targets ourselves; don't auto-disable
+
+        let open = NSMenuItem(title: "Open TerminalPad", action: #selector(openMain), keyEquivalent: "")
+        open.target = self
+        menu.addItem(open)
         menu.addItem(.separator())
+
         for agent in ConfigStore.load() {
             if let v = agent.variants.first {
                 let mi = NSMenuItem(title: "\(agent.name) — \(v.label)",
@@ -82,17 +92,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(mi)
             }
         }
+
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
-        menu.addItem(withTitle: "Quit TerminalPad", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        for mi in menu.items where mi.target == nil { mi.target = self }
+        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        settings.target = self
+        menu.addItem(settings)
+        // Quit must target NSApp (AppDelegate doesn't respond to terminate:).
+        let quit = NSMenuItem(title: "Quit TerminalPad", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        quit.target = NSApp
+        menu.addItem(quit)
+
         item.menu = menu
         statusItem = item
     }
 
     @objc private func openMain() { showMain() }
     @objc private func launchAgent(_ sender: NSMenuItem) {
-        if let cmd = sender.representedObject as? String { Launcher.launch(cmd) }
+        guard let cmd = sender.representedObject as? String else { return }
+        // Bring the app forward first so macOS reliably routes the AppleScript launch.
+        NSApp.activate(ignoringOtherApps: true)
+        Launcher.launch(cmd)
     }
     @objc private func openSettings() {
         showMain()

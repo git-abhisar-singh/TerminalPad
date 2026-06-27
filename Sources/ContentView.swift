@@ -37,12 +37,17 @@ struct ContentView: View {
     private func run(_ agent: Agent, _ command: String, cwd: String? = nil) {
         usage.recordLaunch(agent.name)
         Launcher.launch(command, cwd: cwd ?? agent.cwd)
-        withAnimation { launchToast = agent.name }
+        let name = agent.name
+        withAnimation { launchToast = name }
         if quitAfterLaunch {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NSApp.hide(nil) }
+            // Hide the app, then always clear the toast so it isn't stuck on reopen.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                NSApp.hide(nil)
+                launchToast = nil
+            }
         } else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-                if launchToast == agent.name { withAnimation { launchToast = nil } }
+                if launchToast == name { withAnimation { launchToast = nil } }
             }
         }
     }
@@ -144,6 +149,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .terminalpadReload)) { _ in reload() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            launchToast = nil          // never show a stale "Launching…" on reopen
             DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .terminalpadFocusSearch)) { _ in
