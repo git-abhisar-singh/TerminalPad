@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Scans the Mac for installed command-line tools and turns each into a launchable Agent.
 enum Discovery {
@@ -83,8 +84,24 @@ enum Discovery {
 
     static func firstWord(_ cmd: String) -> String { cmd.split(separator: " ").first.map(String.init) ?? cmd }
 
-    /// An agent counts as installed if any of its variants' base commands exists on the system.
+    /// True if a GUI app with this name is installed (so we can open it when the CLI is absent).
+    static func isAppInstalled(_ name: String?) -> Bool {
+        guard let name, !name.isEmpty else { return false }
+        let bundle = name.hasSuffix(".app") ? name : name + ".app"
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let dirs = ["/Applications", "/Applications/Utilities", "\(home)/Applications", "/System/Applications"]
+        if dirs.contains(where: { FileManager.default.fileExists(atPath: "\($0)/\(bundle)") }) { return true }
+        return NSWorkspace.shared.fullPath(forApplication: name) != nil
+    }
+
+    /// An agent counts as installed if its CLI exists OR (for app-backed agents) its GUI app exists.
     static func isInstalled(_ agent: Agent, in set: Set<String>) -> Bool {
+        if agent.variants.contains(where: { set.contains(firstWord($0.command)) }) { return true }
+        return isAppInstalled(agent.app)
+    }
+
+    /// True if the agent's CLI command is actually present (used to decide CLI-vs-app at launch).
+    static func hasCLI(_ agent: Agent, in set: Set<String>) -> Bool {
         agent.variants.contains { set.contains(firstWord($0.command)) }
     }
 

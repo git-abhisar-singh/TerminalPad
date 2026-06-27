@@ -54,6 +54,11 @@ enum Launcher {
         }
     }
 
+    /// Open a GUI app by name (used when an agent has no CLI installed, only its app).
+    static func openApp(_ name: String) {
+        run("/usr/bin/open", ["-a", name])
+    }
+
     private static func shellQuote(_ s: String) -> String {
         "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }

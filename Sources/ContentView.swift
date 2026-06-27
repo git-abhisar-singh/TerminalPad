@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showAddAgent = false
     @State private var editAgent: Agent? = nil   // non-nil = editing an existing agent
+    @State private var installedCmds: Set<String> = []   // CLI commands present on PATH (CLI-vs-app launch)
     @State private var launchToast: String? = nil
     @State private var helpText: String? = nil
     @State private var helpTitle = ""
@@ -39,7 +40,15 @@ struct ContentView: View {
 
     private func run(_ agent: Agent, _ command: String, cwd: String? = nil) {
         usage.recordLaunch(agent.name)
-        Launcher.launch(command, cwd: cwd ?? agent.cwd)
+        // If the CLI isn't installed but the agent ships a GUI app, open the app instead of
+        // running a missing command in Terminal.
+        let base = Discovery.firstWord(command)
+        let cliPresent = installedCmds.contains(base)
+        if !cliPresent, !installedCmds.isEmpty, let app = agent.app, Discovery.isAppInstalled(app) {
+            Launcher.openApp(app)
+        } else {
+            Launcher.launch(command, cwd: cwd ?? agent.cwd)
+        }
         let name = agent.name
         withAnimation { launchToast = name }
         if quitAfterLaunch {
@@ -155,6 +164,7 @@ struct ContentView: View {
         }
         .onAppear {
             logos.preload(curated.compactMap { $0.logo })
+            refreshInstalled()
             DispatchQueue.main.async { searchFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .terminalpadReload)) { _ in reload() }
@@ -481,7 +491,15 @@ struct ContentView: View {
 
     private func reload() {
         curated = ConfigStore.load()
+        refreshInstalled()
         Task { await loadDiscovered() }
+    }
+
+    private func refreshInstalled() {
+        DispatchQueue.global(qos: .utility).async {
+            let set = Discovery.installedCommands()
+            DispatchQueue.main.async { installedCmds = set }
+        }
     }
 
     private func closeAddAgent() {

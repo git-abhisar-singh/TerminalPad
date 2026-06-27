@@ -26,9 +26,10 @@ struct Agent: Codable, Identifiable, Hashable {
     var cwd: String? = nil     // working directory to launch in
     var symbol: String? = nil  // SF Symbol name, used when there's no logo image
     var colorIcon: Bool = false // render `logo` in full colour (a user-picked custom image)
+    var app: String? = nil     // GUI app name to open when the CLI isn't installed (e.g. "Cursor")
     var discovered: Bool = false
 
-    enum CodingKeys: String, CodingKey { case name, icon, color, variants, logo, aliases, cwd, symbol, colorIcon }
+    enum CodingKeys: String, CodingKey { case name, icon, color, variants, logo, aliases, cwd, symbol, colorIcon, app }
 
     var swiftColor: Color { Color(hex: color) }
 }
@@ -129,7 +130,7 @@ enum AgentCatalog {
             Variant(label: "Skip Permissions",  command: "agy --dangerously-skip-permissions",      icon: "bolt.fill",            color: "#B49CFF"),
             Variant(label: "Continue",          command: "agy --continue",                          icon: "arrow.uturn.left",     color: "#7466D6"),
             Variant(label: "Sandbox",           command: "agy --sandbox",                           icon: "shield.lefthalf.filled", color: "#5E52A8")
-        ], logo: "antigravity", aliases: ["ag", "agy"]),
+        ], logo: "antigravity", aliases: ["ag", "agy"], app: "Antigravity"),
         Agent(name: "Gemini", icon: "GE", color: "#4285F4", variants: [
             Variant(label: "Normal",            command: "gemini",                                  icon: "play.fill",            color: "#4285F4"),
             Variant(label: "YOLO",              command: "gemini --yolo",                           icon: "flame.fill",           color: "#EA4335"),
@@ -145,7 +146,7 @@ enum AgentCatalog {
             Variant(label: "Gemma3 4B",         command: "ollama run gemma3:4b",                    icon: "cpu",                  color: "#C9CDD3"),
             Variant(label: "DeepSeek v3.1",     command: "ollama run deepseek-v3.1:671b-cloud",     icon: "cloud.fill",           color: "#8AA0FF"),
             Variant(label: "List Models",       command: "ollama list",                             icon: "list.bullet",          color: "#9AA0A6")
-        ], logo: "ollama", aliases: ["ol", "llm"]),
+        ], logo: "ollama", aliases: ["ol", "llm"], app: "Ollama"),
         Agent(name: "Codex", icon: "CX", color: "#10A37F", variants: [
             Variant(label: "Normal",            command: "codex",                                   icon: "play.fill",            color: "#10A37F"),
             Variant(label: "Full Auto",         command: "codex --full-auto",                       icon: "bolt.fill",            color: "#0E8C6D"),
@@ -163,7 +164,7 @@ enum AgentCatalog {
         Agent(name: "Cursor", icon: "CU", color: "#0098FF", variants: [
             Variant(label: "Agent",             command: "cursor-agent",                            icon: "play.fill",            color: "#0098FF"),
             Variant(label: "Resume",            command: "cursor-agent resume",                     icon: "arrow.uturn.left",     color: "#0077CC")
-        ], logo: nil, aliases: ["cursor", "cursor-agent"]),
+        ], logo: nil, aliases: ["cursor", "cursor-agent"], app: "Cursor"),
         Agent(name: "Goose", icon: "GO", color: "#5A4FCF", variants: [
             Variant(label: "Session",           command: "goose session",                           icon: "play.fill",            color: "#5A4FCF"),
             Variant(label: "Run",               command: "goose run",                               icon: "bolt.fill",            color: "#473EA8")
