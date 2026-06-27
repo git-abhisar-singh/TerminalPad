@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: TerminalPad
+message: "If you use TerminalPad, please cite it using these metadata."
+type: software
+authors:
+  - given-names: Abhisar
+    family-names: Singh
+    website: "https://vroq.in"
+repository-code: "https://github.com/git-abhisar-singh/TerminalPad"
+url: "https://git-abhisar-singh.github.io/TerminalPad/"
+abstract: >-
+  TerminalPad is the home screen for your terminal on macOS — an AI agent and
+  CLI launcher that opens any AI coding agent (Claude Code, Gemini CLI, Ollama,
+  OpenCode, Cursor and more) or installed command-line tool in one keystroke.
+keywords:
+  - ai-agent-launcher
+  - ai-agents
+  - cli-launcher
+  - macos
+  - swiftui
+  - developer-tools
+license: MIT
+version: 1.0.0
+date-released: "2026-06-27"
