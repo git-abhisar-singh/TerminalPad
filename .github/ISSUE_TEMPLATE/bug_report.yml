@@ -1,0 +1,46 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I click X, Y happens instead of Z.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open TerminalPad
+        2. ...
+        3. See error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: TerminalPad version / commit
+      placeholder: "1.0.0 or git short SHA"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version & chip
+      placeholder: "macOS 15.0, Apple Silicon (M3)"
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal app
+      placeholder: "Terminal / iTerm2 / Ghostty / Warp"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Logs / screenshots
+      description: Anything else that helps — console output, screenshots, GIFs.

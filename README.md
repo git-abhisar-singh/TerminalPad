@@ -10,6 +10,14 @@
 
 A free, open-source **terminal launcher for macOS**. Click a tile (or type and hit Enter) and it launches in a new Terminal window — your agents, plus docker, ffmpeg, gh, kubectl, and everything else.
 
+<p>
+<a href="https://github.com/git-abhisar-singh/TerminalPad/releases/latest"><img src="https://img.shields.io/github/v/release/git-abhisar-singh/TerminalPad?label=release&color=000000" alt="Latest release" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-000000" alt="MIT License" /></a>
+<img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple" alt="macOS 14+" />
+<img src="https://img.shields.io/badge/arch-Apple%20Silicon%20%2B%20Intel-000000" alt="Universal" />
+<a href="https://github.com/git-abhisar-singh/TerminalPad/stargazers"><img src="https://img.shields.io/github/stars/git-abhisar-singh/TerminalPad?style=flat&color=000000" alt="Stars" /></a>
+</p>
+
 </div>
 
 ---
@@ -119,6 +127,15 @@ logos.py             logo fetcher
 Info.plist
 ```
 
+## Contributing & community
+
+- [Contributing guide](CONTRIBUTING.md) — build from source, project layout, PR flow
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md) — report vulnerabilities privately
+- [Privacy](PRIVACY.md) — no telemetry, no analytics, no accounts
+- [Changelog](CHANGELOG.md)
+- [Discussions](https://github.com/git-abhisar-singh/TerminalPad/discussions) · [Issues](https://github.com/git-abhisar-singh/TerminalPad/issues)
+
 ## License
 
-MIT © Abhisar Singh. Brand logos are trademarks of their respective owners, sourced via [Simple Icons](https://github.com/simple-icons/simple-icons).
+MIT © Abhisar Singh — see [LICENSE](LICENSE). Brand logos are trademarks of their respective owners, sourced via [Simple Icons](https://github.com/simple-icons/simple-icons); see [NOTICE.md](NOTICE.md).
