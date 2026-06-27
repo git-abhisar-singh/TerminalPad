@@ -46,63 +46,93 @@ enum Discovery {
         return false
     }
 
-    /// Every directory we scan for executables. Built from the login shell's real
-    /// PATH (a GUI app doesn't inherit it) plus every common installer/version-manager
-    /// location — so anything a developer installs is found, whatever put it there.
-    static func scanDirs() -> [String] {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        var dirs = Set<String>()
+    /// Homebrew binary dirs, used only to resolve a `brew leaves` formula to its real command.
+    static let brewBins = ["/opt/homebrew/bin", "/opt/homebrew/sbin",
+                           "/usr/local/bin", "/usr/local/sbin", "/opt/local/bin"]
 
-        // The user's real login PATH — covers brew, npm, pipx, cargo, go, custom dirs, …
-        let shellPath = run("/bin/zsh", ["-lc", "printf %s \"$PATH\""])
-        dirs.formUnion(shellPath.split(separator: ":").map(String.init))
-
-        // Known locations, in case they aren't on PATH for this GUI session.
-        dirs.formUnion([
-            "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/usr/local/sbin",
-            "/opt/local/bin", "/opt/local/sbin",                                   // MacPorts
-            "\(home)/.local/bin", "\(home)/bin", "\(home)/.bin",
-            "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin", "\(home)/.deno/bin",
-            "\(home)/.npm-global/bin", "\(home)/.yarn/bin", "\(home)/Library/pnpm",
-            "\(home)/.dotnet/tools", "\(home)/.composer/vendor/bin", "\(home)/.cabal/bin",
-            "\(home)/.mix/escripts", "\(home)/.rye/shims", "\(home)/.modular/bin",
-            // version-manager shims
-            "\(home)/.local/share/mise/shims", "\(home)/.asdf/shims", "\(home)/.volta/bin",
-            "\(home)/.rbenv/shims", "\(home)/.pyenv/shims", "\(home)/.nodenv/shims",
-            "\(home)/.local/share/aquaproj-aqua/bin"
-        ])
-
-        // Never scan the macOS base bins — they'd flood the grid with coreutils (ls, cat, …).
-        dirs.subtract(["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/var/run", ""])
-        return Array(dirs)
+    /// Resolve a brew formula name to an actual top-level command. Returns nil for
+    /// library-only formulae (no runnable binary) so deps never show up.
+    static func resolveBrew(_ formula: String) -> String? {
+        var name = formula.split(separator: "/").last.map(String.init) ?? formula  // drop tap prefix
+        if let at = name.firstIndex(of: "@") { name = String(name[..<at]) }        // drop @version
+        for candidate in [aliases[name] ?? name, name] {
+            for dir in brewBins where FileManager.default.isExecutableFile(atPath: "\(dir)/\(candidate)") {
+                return candidate
+            }
+        }
+        return nil
     }
 
-    /// Returns discovered tools as Agents, excluding any command already covered by curated agents.
+    /// User-owned package/bin dirs. Everything here was installed deliberately by the user
+    /// (cargo/go/bun/pipx/pnpm/etc.) — never Homebrew dependency binaries.
+    static func userBinDirs() -> [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return [
+            "\(home)/.local/bin", "\(home)/bin", "\(home)/.cargo/bin", "\(home)/go/bin",
+            "\(home)/.bun/bin", "\(home)/.deno/bin", "\(home)/.npm-global/bin",
+            "\(home)/.yarn/bin", "\(home)/Library/pnpm", "\(home)/.dotnet/tools",
+            "\(home)/.composer/vendor/bin", "\(home)/.cabal/bin", "\(home)/.mix/escripts"
+        ]
+    }
+
+    /// Returns discovered tools as Agents — only things the user *intentionally* installed:
+    /// Homebrew `leaves` (installed-on-request, not dependencies), global npm/pipx packages,
+    /// and user-owned bin dirs (cargo/go/bun/…). Never raw Homebrew bin scans (that pulls deps).
     static func tools(excluding curated: Set<String>) -> [Agent] {
         let fm = FileManager.default
-
-        // Collect every executable across all scan dirs (parallel dir reads).
+        let home = fm.homeDirectoryForCurrentUser.path
         let group = DispatchGroup()
         let lock = NSLock()
         var names = Set<String>()
-        for dir in scanDirs() {
+        func add(_ items: [String]) { lock.lock(); names.formUnion(items); lock.unlock() }
+
+        // 1. Homebrew formulae installed on request (excludes dependencies), resolved to real commands.
+        if let brew = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
+            .first(where: { fm.isExecutableFile(atPath: $0) }) {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                guard let items = try? fm.contentsOfDirectory(atPath: dir) else { return }
-                var found: [String] = []
-                for f in items where !f.hasPrefix(".") {
-                    if fm.isExecutableFile(atPath: "\(dir)/\(f)") { found.append(f) }
-                }
-                lock.lock(); names.formUnion(found); lock.unlock()
+                add(run(brew, ["leaves"]).split(whereSeparator: \.isNewline)
+                    .compactMap { resolveBrew(String($0)) })
             }
         }
+
+        // 2. Global npm packages.
+        if let npm = ["/opt/homebrew/bin/npm", "/usr/local/bin/npm"]
+            .first(where: { fm.isExecutableFile(atPath: $0) }) {
+            group.enter()
+            DispatchQueue.global().async {
+                defer { group.leave() }
+                add(run(npm, ["ls", "-g", "--depth=0", "--parseable"])
+                    .split(whereSeparator: \.isNewline)
+                    .compactMap { $0.split(separator: "/").last.map(String.init) }
+                    .filter { $0 != "lib" && !$0.hasPrefix("@") })
+            }
+        }
+
+        // 3. pipx apps.
+        if let pipx = ["/opt/homebrew/bin/pipx", "\(home)/.local/bin/pipx"]
+            .first(where: { fm.isExecutableFile(atPath: $0) }) {
+            group.enter()
+            DispatchQueue.global().async {
+                defer { group.leave() }
+                add(run(pipx, ["list", "--short"])
+                    .split(whereSeparator: \.isNewline)
+                    .compactMap { $0.split(separator: " ").first.map(String.init) })
+            }
+        }
+
+        // 4. User-owned bin dirs (cheap reads, inline).
+        for dir in userBinDirs() {
+            guard let items = try? fm.contentsOfDirectory(atPath: dir) else { continue }
+            add(items.filter { !$0.hasPrefix(".") && fm.isExecutableFile(atPath: "\(dir)/\($0)") })
+        }
+
         group.wait()
 
         var seen = Set<String>()
         var out: [Agent] = []
         for raw in names.sorted() {
-            // strip @version (e.g. node@20), apply formula→binary aliases
             var name = raw
             if let at = name.firstIndex(of: "@") { name = String(name[..<at]) }
             let cmd = aliases[name] ?? name

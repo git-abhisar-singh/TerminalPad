@@ -17,6 +17,7 @@ struct ContentView: View {
     @AppStorage("seenOnboarding") private var seenOnboarding = false
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
+    @State private var showAddAgent = false
     @State private var launchToast: String? = nil
     @State private var helpText: String? = nil
     @State private var helpTitle = ""
@@ -161,6 +162,9 @@ struct ContentView: View {
         .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
             HelpSheet(title: helpTitle, text: helpText ?? "") { helpText = nil }
         }
+        .sheet(isPresented: $showAddAgent) {
+            AddAgentSheet { reload() }
+        }
         .overlay(alignment: .bottom) {
             if let t = launchToast {
                 Label("Launching \(t)…", systemImage: "terminal")
@@ -191,6 +195,7 @@ struct ContentView: View {
     private var searchRow: some View {
         HStack(spacing: 10) {
             searchField
+            headerButton("plus", help: "Add a tool or agent manually") { showAddAgent = true }
             headerButton("arrow.clockwise", help: "Rescan installed tools") { reload() }
             headerButton("gearshape", help: "Settings") {
                 withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
@@ -719,6 +724,100 @@ struct HelpSheet: View {
             }
         }
         .frame(width: 560, height: 460)
+    }
+}
+
+/// Quick form to add a tool or agent by hand — name + command, optional color/aliases.
+/// Saves straight into the config and triggers a reload.
+struct AddAgentSheet: View {
+    var onAdded: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var logos = LogoStore.shared
+
+    @State private var name = ""
+    @State private var command = ""
+    @State private var aliases = ""
+    @State private var color = "#5B8DEF"
+
+    private var base: String { command.split(separator: " ").first.map(String.init) ?? command }
+    private var mono: String { String(name.prefix(2)).uppercased() }
+    private var canAdd: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !command.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+    private var previewAgent: Agent {
+        Agent(name: name.isEmpty ? "New Tool" : name, icon: mono.isEmpty ? "?" : mono,
+              color: color.hasPrefix("#") ? color : "#5B8DEF",
+              variants: [Variant(label: "Run", command: command)], logo: base.isEmpty ? nil : base)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Add a Tool or Agent").font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Button("Cancel", action: { dismiss() }).keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            Divider()
+
+            HStack(alignment: .top, spacing: 18) {
+                AgentIcon(agent: previewAgent, logos: logos, size: 84)
+                    .padding(.top, 4)
+                VStack(alignment: .leading, spacing: 10) {
+                    field("Name", "e.g. My Server", $name)
+                    field("Command", "e.g. ssh prod or claude --resume", $command, mono: true)
+                    field("Aliases (optional)", "comma-separated, e.g. srv, prod", $aliases)
+                    HStack(spacing: 8) {
+                        Text("Color").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                            .frame(width: 64, alignment: .leading)
+                        TextField("#5B8DEF", text: $color).textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced)).frame(width: 110)
+                        RoundedRectangle(cornerRadius: 5).fill(Color(hex: color)).frame(width: 22, height: 22)
+                    }
+                }
+            }
+            .padding(18)
+
+            Spacer(minLength: 0)
+            Divider()
+            HStack {
+                Text("Saved to ~/.config/terminalpad/agents.json")
+                    .font(.caption).foregroundStyle(.tertiary)
+                Spacer()
+                Button("Add") { add() }
+                    .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
+                    .disabled(!canAdd)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+        }
+        .frame(width: 520, height: 360)
+    }
+
+    @ViewBuilder private func field(_ label: String, _ placeholder: String,
+                                    _ text: Binding<String>, mono: Bool = false) -> some View {
+        HStack(spacing: 8) {
+            Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .frame(width: 64, alignment: .leading)
+            TextField(placeholder, text: text)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 12, design: mono ? .monospaced : .default))
+        }
+    }
+
+    private func add() {
+        let n = name.trimmingCharacters(in: .whitespaces)
+        let cmd = command.trimmingCharacters(in: .whitespaces)
+        guard !n.isEmpty, !cmd.isEmpty else { return }
+        let al = aliases.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let c = color.hasPrefix("#") ? color : "#5B8DEF"
+        var agents = ConfigStore.load()
+        agents.append(Agent(name: n, icon: String(n.prefix(2)).uppercased(), color: c,
+                            variants: [Variant(label: "Run", command: cmd, icon: "terminal", color: c)],
+                            logo: cmd.split(separator: " ").first.map(String.init), aliases: al))
+        ConfigStore.save(agents)
+        onAdded()
+        dismiss()
     }
 }
 
