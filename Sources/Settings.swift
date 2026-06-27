@@ -137,6 +137,18 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section("Project") {
+                Link("Website", destination: URL(string: "https://git-abhisar-singh.github.io/TerminalPad/")!)
+                Link("Source on GitHub", destination: URL(string: "https://github.com/git-abhisar-singh/TerminalPad")!)
+                Link("Report an issue", destination: URL(string: "https://github.com/git-abhisar-singh/TerminalPad/issues/new/choose")!)
+            }
+            Section("Created by Abhisar Singh") {
+                Link("Website — vroq.in", destination: URL(string: "https://vroq.in")!)
+                Link("X / Twitter", destination: URL(string: "https://x.com/helloabhisar")!)
+                Link("GitHub", destination: URL(string: "https://github.com/git-abhisar-singh")!)
+                Link("LinkedIn", destination: URL(string: "https://www.linkedin.com/in/-abhisar-singh/")!)
+                Link("All links", destination: URL(string: "https://abhisar.taplink.in")!)
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
