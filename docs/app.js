@@ -21,6 +21,37 @@ document.querySelectorAll("[data-copy]").forEach((box) => {
   });
 });
 
+// Snappy in-page navigation: fixed-duration eased scroll + reveal the
+// destination immediately so it's never blank during the jump.
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NAV_OFFSET = 72;
+function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+function smoothScrollTo(targetY, dur = 460) {
+  if (reduceMotion) { window.scrollTo(0, targetY); return; }
+  const startY = window.scrollY, dist = targetY - startY, t0 = performance.now();
+  function step(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    window.scrollTo(0, startY + dist * easeInOutCubic(p));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('a[href^="#"]').forEach((a) => {
+  a.addEventListener("click", (e) => {
+    const id = a.getAttribute("href");
+    if (!id || id.length < 2) return;
+    const el = document.querySelector(id);
+    if (!el) return;
+    e.preventDefault();
+    // reveal destination instantly (no blank fade while we land)
+    if (el.classList.contains("reveal")) el.classList.add("in");
+    el.querySelectorAll(".reveal").forEach((r) => r.classList.add("in"));
+    const y = el.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
+    smoothScrollTo(Math.max(0, y));
+    history.pushState(null, "", id);
+  });
+});
+
 // Nav: solidify on scroll
 const nav = document.getElementById("nav");
 const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 12);
