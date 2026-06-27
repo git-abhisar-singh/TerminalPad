@@ -26,18 +26,20 @@ enum Launcher {
 
         switch preferred {
         case .terminal:
+            // Create the new window FIRST (it lands on the current Space), THEN activate —
+            // so macOS doesn't jump to a Space that already has a Terminal window.
             runOsascript("""
             tell application "Terminal"
-                activate
                 do script "\(esc)"
+                activate
             end tell
             """)
         case .iterm:
             runOsascript("""
             tell application "iTerm"
-                activate
                 set w to (create window with default profile)
                 tell current session of w to write text "\(esc)"
+                activate
             end tell
             """)
         case .ghostty, .warp:
