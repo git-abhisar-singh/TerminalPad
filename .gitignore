@@ -17,3 +17,6 @@ __pycache__/
 
 # raw design exports
 Figma*.png
+
+# raw design exports (cont.)
+Frame*.png
