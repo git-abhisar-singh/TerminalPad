@@ -87,9 +87,11 @@ def og_image():
     img.alpha_composite(tile, (110, (H - 260) // 2))
 
     tx = 430
-    d.text((tx, 232), "TerminalPad", font=font(96), fill=(255, 255, 255, 255))
-    d.text((tx, 348), "A Launchpad for your terminal agents.",
-           font=font(40, bold=False), fill=(176, 176, 198, 255))
+    d.text((tx, 210), "TerminalPad", font=font(94), fill=(255, 255, 255, 255))
+    d.text((tx, 322), "The home screen for AI coding",
+           font=font(38, bold=False), fill=(188, 188, 210, 255))
+    d.text((tx, 372), "agents on Mac.",
+           font=font(38, bold=False), fill=(188, 188, 210, 255))
     img.convert("RGB").save(os.path.join(ASSETS, "og.png"), quality=92)
     print("wrote og.png (1200x630)")
 

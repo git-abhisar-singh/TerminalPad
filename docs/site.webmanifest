@@ -1,7 +1,7 @@
 {
   "name": "TerminalPad",
   "short_name": "TerminalPad",
-  "description": "A Launchpad + Spotlight for your terminal agents and CLI tools on macOS.",
+  "description": "The home screen for AI coding agents on Mac. Launch Claude Code, Gemini CLI, Ollama, OpenCode and every AI coding CLI instantly.",
   "start_url": "/TerminalPad/",
   "display": "standalone",
   "background_color": "#050506",
