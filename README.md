@@ -18,7 +18,7 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 
 ## Features
 
-- **Launchpad grid** of agents — pure dark, full Liquid Glass (macOS 26), transparent panel.
+- **Launchpad grid** of agents — pure dark, transparent panel. Real Liquid Glass on macOS 26, a clean dark blur everywhere else.
 - **Spotlight search** — opens focused. Type to filter, `↑`/`↓` to move, `Enter` launches the top match, `Esc` clears/closes.
 - **Per-mode tiles** — `claude` vs `claude --dangerously-skip-permissions` vs `claude -c` each get their own icon and color.
 - **Real logos** — fetched from [Simple Icons](https://simpleicons.org), rendered white on glass. ~50 ship bundled; unknown tools fetch on demand and cache.
@@ -27,7 +27,7 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 
 ## Install
 
-Requires macOS 26 (Tahoe) and the Swift toolchain — `xcode-select --install` is enough, no full Xcode needed.
+Requires macOS 14 (Sonoma) or later — Apple Silicon or Intel — and the Swift toolchain (`xcode-select --install` is enough, no full Xcode needed). On macOS 26 (Tahoe) you get real Liquid Glass; on earlier versions it falls back to a clean dark panel.
 
 ```bash
 git clone https://github.com/git-abhisar-singh/TerminalPad.git
