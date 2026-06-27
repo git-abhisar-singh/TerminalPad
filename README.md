@@ -27,6 +27,18 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 - **Native — looks like Mac, because it is.** Pure SwiftUI with real [Simple Icons](https://simpleicons.org) brand logos. Liquid Glass on macOS 26, a clean dark panel everywhere else.
 - **Yours — bend it to your setup.** Plain JSON at `~/.config/terminalpad/agents.json` — add agents, modes, working dirs. Hit reload, no rebuild.
 
+## Screenshots
+
+<div align="center">
+
+<img src="docs/assets/shots/01-grid.png" width="100%" alt="TerminalPad grid — your agents and tools" />
+
+</div>
+
+| Every mode is a tile | Spotlight search | Add anything, auto-detected icons |
+|:---:|:---:|:---:|
+| <img src="docs/assets/shots/02-modes.png" alt="Per-mode tiles" /> | <img src="docs/assets/shots/04-search.png" alt="Spotlight search" /> | <img src="docs/assets/shots/03-add.png" alt="Add agent page" /> |
+
 ## Install
 
 Requires macOS 14 (Sonoma) or later — Apple Silicon or Intel — and the Swift toolchain (`xcode-select --install` is enough, no full Xcode needed). On macOS 26 (Tahoe) you get real Liquid Glass; on earlier versions it falls back to a clean dark panel.
