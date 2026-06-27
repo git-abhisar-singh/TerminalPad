@@ -14,7 +14,7 @@ final class LogoStore: ObservableObject {
     nonisolated private static let bundledDir = Bundle.main.resourceURL?.appendingPathComponent("logos")
     nonisolated private static var cacheDir: URL {
         let d = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/agentpad/logos", isDirectory: true)
+            .appendingPathComponent(".config/terminalpad/logos", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
     }

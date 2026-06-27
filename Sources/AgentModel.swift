@@ -58,7 +58,7 @@ enum ConfigStore {
     static var dir: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config", isDirectory: true)
-            .appendingPathComponent("agentpad", isDirectory: true)
+            .appendingPathComponent("terminalpad", isDirectory: true)
     }
     static var file: URL { dir.appendingPathComponent("agents.json") }
 
@@ -69,7 +69,7 @@ enum ConfigStore {
             let data = try Data(contentsOf: file)
             return try JSONDecoder().decode(AgentConfig.self, from: data).agents
         } catch {
-            NSLog("AgentPad: config load failed: \(error). Using defaults.")
+            NSLog("TerminalPad: config load failed: \(error). Using defaults.")
             return defaults
         }
     }

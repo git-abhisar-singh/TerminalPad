@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="icon-preview.png" width="120" alt="AgentPad icon" />
+<img src="icon-preview.png" width="120" alt="TerminalPad icon" />
 
-# AgentPad
+# TerminalPad
 
 **A Launchpad + Spotlight for your terminal agents and CLI tools.**
 
@@ -14,7 +14,7 @@ Click a tile (or type and hit Enter) and it launches in a new Terminal window �
 
 ## Why
 
-You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollama run …` into a terminal. AgentPad turns those into a glassy, searchable grid. Each agent gets its real logo and one tile per mode. Every other CLI you've installed (scrcpy, ffmpeg, gh, docker, …) is auto-discovered and added too.
+You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollama run …` into a terminal. TerminalPad turns those into a glassy, searchable grid. Each agent gets its real logo and one tile per mode. Every other CLI you've installed (scrcpy, ffmpeg, gh, docker, …) is auto-discovered and added too.
 
 ## Features
 
@@ -23,15 +23,15 @@ You keep typing `claude --dangerously-skip-permissions`, `gemini --yolo`, `ollam
 - **Per-mode tiles** — `claude` vs `claude --dangerously-skip-permissions` vs `claude -c` each get their own icon and color.
 - **Real logos** — fetched from [Simple Icons](https://simpleicons.org), rendered white on glass. ~50 ship bundled; unknown tools fetch on demand and cache.
 - **Auto-discovery** — scans `brew leaves`, npm globals, pipx, and `cargo`/`go`/`bun`/`~/.local/bin`, adding every installed CLI with a matched logo (or a clean monogram fallback). Results are cached, so the grid is instant on launch and rescans in the background.
-- **JSON config** — edit `~/.config/agentpad/agents.json` to add agents/modes. No rebuild.
+- **JSON config** — edit `~/.config/terminalpad/agents.json` to add agents/modes. No rebuild.
 
 ## Install
 
 Requires macOS 26 (Tahoe) and the Swift toolchain — `xcode-select --install` is enough, no full Xcode needed.
 
 ```bash
-git clone https://github.com/git-abhisar-singh/AgentPad.git
-cd AgentPad
+git clone https://github.com/git-abhisar-singh/TerminalPad.git
+cd TerminalPad
 ./install.sh
 ```
 
@@ -41,14 +41,14 @@ Prefer to do it by hand?
 
 ```bash
 ./build.sh
-mv AgentPad.app /Applications/
+mv TerminalPad.app /Applications/
 ```
 
-First time you launch an agent, macOS asks **"AgentPad wants to control Terminal."** Click **Allow** (it's how it opens a new Terminal window).
+First time you launch an agent, macOS asks **"TerminalPad wants to control Terminal."** Click **Allow** (it's how it opens a new Terminal window).
 
 ## Configure
 
-`~/.config/agentpad/agents.json` is seeded on first run. Add or edit agents, then hit the ⟳ button (or relaunch):
+`~/.config/terminalpad/agents.json` is seeded on first run. Add or edit agents, then hit the ⟳ button (or relaunch):
 
 ```json
 {
@@ -80,7 +80,7 @@ First time you launch an agent, macOS asks **"AgentPad wants to control Terminal
 
 - **Launch** — runs `osascript` to `tell application "Terminal" to do script "<command>"` in a login shell, so your normal `PATH` resolves the binary.
 - **Logos** — `logos.py` pulls black SVGs from Simple Icons, rasterizes via macOS `qlmanage`, and keys white→transparent. At runtime `LogoStore` does the same in Swift (CoreImage) for tools discovered later.
-- **Discovery** — `Discovery.swift` runs `brew leaves`, npm, and pipx in parallel, resolves each formula to its real binary, skips libraries, and builds a tile per tool. The last scan is cached to `~/.config/agentpad/discovered.json` and painted instantly while a fresh scan runs in the background.
+- **Discovery** — `Discovery.swift` runs `brew leaves`, npm, and pipx in parallel, resolves each formula to its real binary, skips libraries, and builds a tile per tool. The last scan is cached to `~/.config/terminalpad/discovered.json` and painted instantly while a fresh scan runs in the background.
 - **Build** — `build.sh` compiles the SwiftUI sources with `swiftc` and assembles the `.app` bundle by hand (no Xcode project).
 
 ## Project layout

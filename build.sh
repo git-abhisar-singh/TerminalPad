@@ -1,9 +1,9 @@
 #!/bin/bash
-# Build AgentPad.app from Swift sources without Xcode (CommandLineTools only).
+# Build TerminalPad.app from Swift sources without Xcode (CommandLineTools only).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP="$ROOT/AgentPad.app"
+APP="$ROOT/TerminalPad.app"
 MACOS="$APP/Contents/MacOS"
 RES="$APP/Contents/Resources"
 
@@ -18,7 +18,7 @@ swiftc \
     -framework SwiftUI \
     -framework AppKit \
     -framework Carbon \
-    -o "$MACOS/AgentPad" \
+    -o "$MACOS/TerminalPad" \
     "$ROOT"/Sources/*.swift
 
 echo "==> Installing Info.plist"

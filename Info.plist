@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>AgentPad</string>
+    <string>TerminalPad</string>
     <key>CFBundleDisplayName</key>
-    <string>AgentPad</string>
+    <string>TerminalPad</string>
     <key>CFBundleIdentifier</key>
-    <string>com.abhisar.agentpad</string>
+    <string>com.abhisar.terminalpad</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleExecutable</key>
-    <string>AgentPad</string>
+    <string>TerminalPad</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
@@ -25,6 +25,6 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>AgentPad opens Terminal to launch your selected agent.</string>
+    <string>TerminalPad opens Terminal to launch your selected agent.</string>
 </dict>
 </plist>

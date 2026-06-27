@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build AppIcon.icns: white AgentPad logo on a dark glass squircle."""
+"""Build AppIcon.icns: white TerminalPad logo on a dark glass squircle."""
 import os, subprocess, math
 from PIL import Image, ImageDraw, ImageFilter
 
-SRC = "/Users/abhisarsingh/Documents/agentpad .png"
+SRC = "/Users/abhisarsingh/Documents/terminalpad .png"
 ROOT = os.path.dirname(os.path.abspath(__file__))
 S = 1024
 

@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 
 @main
-struct AgentPadApp: App {
+struct TerminalPadApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     var body: some Scene {
@@ -15,13 +15,13 @@ struct AgentPadApp: App {
         .defaultSize(width: 880, height: 620)
         .commands {
             CommandGroup(replacing: .appSettings) {
-                Button("Settings…") { post(.agentpadOpenSettings) }
+                Button("Settings…") { post(.terminalpadOpenSettings) }
                     .keyboardShortcut(",", modifiers: .command)
             }
             CommandGroup(replacing: .toolbar) {
-                Button("Search") { post(.agentpadFocusSearch) }
+                Button("Search") { post(.terminalpadFocusSearch) }
                     .keyboardShortcut("f", modifiers: .command)
-                Button("Rescan Tools") { post(.agentpadReload) }
+                Button("Rescan Tools") { post(.terminalpadReload) }
                     .keyboardShortcut("r", modifiers: .command)
             }
         }
@@ -53,14 +53,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func mainWindow() -> NSWindow? {
-        NSApp.windows.first { $0.title == "AgentPad" }
+        NSApp.windows.first { $0.title == "TerminalPad" }
     }
 
     func showMain() {
         NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
         mainWindow()?.makeKeyAndOrderFront(nil)
-        post(.agentpadFocusSearch)
+        post(.terminalpadFocusSearch)
     }
 
     // MARK: AppKit menu bar (no phantom window, unlike SwiftUI MenuBarExtra)
@@ -71,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else { item.button?.title = "AP" }
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Open AgentPad", action: #selector(openMain), keyEquivalent: "")
+        menu.addItem(withTitle: "Open TerminalPad", action: #selector(openMain), keyEquivalent: "")
         menu.addItem(.separator())
         for agent in ConfigStore.load() {
             if let v = agent.variants.first {
@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
-        menu.addItem(withTitle: "Quit AgentPad", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: "Quit TerminalPad", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         for mi in menu.items where mi.target == nil { mi.target = self }
         item.menu = menu
         statusItem = item
@@ -96,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func openSettings() {
         showMain()
-        post(.agentpadOpenSettings)
+        post(.terminalpadOpenSettings)
     }
 }
 
@@ -112,7 +112,7 @@ struct WindowConfigurator: NSViewRepresentable {
             win.titleVisibility = .hidden
             win.styleMask.insert(.fullSizeContentView)
             win.isMovableByWindowBackground = true
-            win.setFrameAutosaveName("AgentPadMainWindow")   // remember size/position
+            win.setFrameAutosaveName("TerminalPadMainWindow")   // remember size/position
             // Unified toolbar makes the titlebar taller so the traffic lights
             // sit lower with breathing room (and the system keeps them centred).
             let tb = NSToolbar(identifier: "ap.toolbar")

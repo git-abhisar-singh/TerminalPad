@@ -66,6 +66,6 @@ enum Launcher {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: path)
         p.arguments = args
-        do { try p.run() } catch { NSLog("AgentPad: launch failed: \(error)") }
+        do { try p.run() } catch { NSLog("TerminalPad: launch failed: \(error)") }
     }
 }

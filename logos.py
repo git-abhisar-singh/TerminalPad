@@ -42,7 +42,7 @@ def fetch_svg(slug):
     # request BLACK logo; qlmanage flattens on white, then we key out white -> white-on-transparent
     url = f"https://cdn.simpleicons.org/{slug}/000000"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "agentpad"})
+        req = urllib.request.Request(url, headers={"User-Agent": "terminalpad"})
         with urllib.request.urlopen(req, timeout=8) as r:
             if r.status == 200:
                 data = r.read()

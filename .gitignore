@@ -1,5 +1,5 @@
 # Build output
-AgentPad.app/
+TerminalPad.app/
 AppIcon.iconset/
 *.original.md
 # (icon-preview.png is kept — used in README)

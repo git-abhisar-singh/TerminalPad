@@ -1,7 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// System-wide hotkey (default ⌥⌘Space) to summon/dismiss AgentPad. No entitlement required.
+/// System-wide hotkey (default ⌥⌘Space) to summon/dismiss TerminalPad. No entitlement required.
 final class HotKeyManager {
     static let shared = HotKeyManager()
     private var ref: EventHotKeyRef?

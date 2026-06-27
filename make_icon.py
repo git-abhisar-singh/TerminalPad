@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate AppIcon.icns + menu-bar template from agentpad-logo.png (black mark on white).
+"""Generate AppIcon.icns + menu-bar template from terminalpad-logo.png (black mark on white).
 
 Run: python3 make_icon.py
 Outputs:
@@ -9,7 +9,7 @@ Outputs:
 import os, math, subprocess, shutil
 from PIL import Image, ImageDraw
 
-SRC = "agentpad-logo.png"
+SRC = "terminalpad-logo.png"
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 

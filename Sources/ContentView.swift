@@ -142,14 +142,14 @@ struct ContentView: View {
             logos.preload(curated.compactMap { $0.logo })
             DispatchQueue.main.async { searchFocused = true }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .agentpadReload)) { _ in reload() }
+        .onReceive(NotificationCenter.default.publisher(for: .terminalpadReload)) { _ in reload() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             DispatchQueue.main.async { searchFocused = true }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .agentpadFocusSearch)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .terminalpadFocusSearch)) { _ in
             query = ""; DispatchQueue.main.async { searchFocused = true }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .agentpadOpenSettings)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .terminalpadOpenSettings)) { _ in
             withAnimation(.easeInOut(duration: 0.2)) { showSettings = true }
         }
         .sheet(isPresented: Binding(get: { helpText != nil }, set: { if !$0 { helpText = nil } })) {
@@ -174,7 +174,7 @@ struct ContentView: View {
     // Fixed-height strip so content vertically centres with the native traffic lights.
     private var titleBar: some View {
         // Title only — this region overlaps the draggable titlebar, so NO buttons here.
-        Text(showSettings ? "Settings" : "AgentPad")
+        Text(showSettings ? "Settings" : "TerminalPad")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
@@ -334,7 +334,7 @@ struct ContentView: View {
     private var onboardingCard: some View {
         HStack(alignment: .top, spacing: 11) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Welcome to AgentPad").font(.system(size: 12.5, weight: .semibold))
+                Text("Welcome to TerminalPad").font(.system(size: 12.5, weight: .semibold))
                 Text("A launcher for your terminal agents and CLI tools. Click any tile to open it in your terminal, or type to search and press Return.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

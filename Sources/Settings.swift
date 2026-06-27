@@ -3,9 +3,9 @@ import AppKit
 import ServiceManagement
 
 extension Notification.Name {
-    static let agentpadReload = Notification.Name("agentpadReload")
-    static let agentpadFocusSearch = Notification.Name("agentpadFocusSearch")
-    static let agentpadOpenSettings = Notification.Name("agentpadOpenSettings")
+    static let terminalpadReload = Notification.Name("terminalpadReload")
+    static let terminalpadFocusSearch = Notification.Name("terminalpadFocusSearch")
+    static let terminalpadOpenSettings = Notification.Name("terminalpadOpenSettings")
 }
 
 enum AppImages {
@@ -55,7 +55,7 @@ struct SettingsView: View {
                 Picker("Terminal", selection: $terminalApp) {
                     ForEach(TerminalApp.allCases) { Text($0.rawValue).tag($0.rawValue) }
                 }
-                Toggle("Quit AgentPad after launching", isOn: $quitAfterLaunch)
+                Toggle("Quit TerminalPad after launching", isOn: $quitAfterLaunch)
                 Picker("Hover haptics", selection: $hapticLevel) {
                     Text("Off").tag("off")
                     Text("Light").tag("light")
@@ -164,7 +164,7 @@ struct SettingsView: View {
 
     private func refreshLogos() {
         let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/agentpad/logos")
+            .appendingPathComponent(".config/terminalpad/logos")
         try? FileManager.default.removeItem(at: dir)
         post()
     }
@@ -172,7 +172,7 @@ struct SettingsView: View {
     private func checkUpdate() {
         updateStatus = "Checking…"
         Task {
-            guard let url = URL(string: "https://api.github.com/repos/abhisarsinghwork/agentpad/releases/latest"),
+            guard let url = URL(string: "https://api.github.com/repos/abhisarsinghwork/terminalpad/releases/latest"),
                   let (data, _) = try? await URLSession.shared.data(from: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let tag = json["tag_name"] as? String else {
@@ -185,14 +185,14 @@ struct SettingsView: View {
         }
     }
 
-    private func post() { NotificationCenter.default.post(name: .agentpadReload, object: nil) }
+    private func post() { NotificationCenter.default.post(name: .terminalpadReload, object: nil) }
     private func openConfig() {
         if !FileManager.default.fileExists(atPath: ConfigStore.file.path) { ConfigStore.seed() }
         NSWorkspace.shared.open(ConfigStore.file)
     }
     private func setLoginItem(_ on: Bool) {
         do { on ? try SMAppService.mainApp.register() : try SMAppService.mainApp.unregister() }
-        catch { NSLog("AgentPad: login item error: \(error)") }
+        catch { NSLog("TerminalPad: login item error: \(error)") }
     }
 }
 

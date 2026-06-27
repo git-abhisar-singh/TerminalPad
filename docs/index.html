@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgentPad — A Launchpad for your terminal agents</title>
+<title>TerminalPad — A Launchpad for your terminal agents</title>
 <meta name="description" content="A Launchpad + Spotlight for your terminal agents and CLI tools. Click a tile, it launches in a new Terminal window. For macOS." />
-<meta property="og:title" content="AgentPad" />
+<meta property="og:title" content="TerminalPad" />
 <meta property="og:description" content="A Launchpad + Spotlight for your terminal agents and CLI tools, for macOS." />
 <meta property="og:image" content="assets/icon.png" />
 <meta name="theme-color" content="#000000" />
@@ -29,14 +29,14 @@
 <header class="nav">
   <a class="brand" href="#top">
     <img src="assets/icon.png" alt="" class="brand-mark" />
-    <span>AgentPad</span>
+    <span>TerminalPad</span>
   </a>
   <nav class="nav-links">
     <a href="#features">Features</a>
     <a href="#install">Install</a>
     <a href="#how">How it works</a>
   </nav>
-  <a class="btn btn-ghost" href="https://github.com/git-abhisar-singh/AgentPad" target="_blank" rel="noopener">
+  <a class="btn btn-ghost" href="https://github.com/git-abhisar-singh/TerminalPad" target="_blank" rel="noopener">
     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     GitHub
   </a>
@@ -54,10 +54,10 @@
     </p>
     <div class="cta-row">
       <a class="btn btn-primary" href="#install">Install for macOS</a>
-      <a class="btn btn-ghost" href="https://github.com/git-abhisar-singh/AgentPad" target="_blank" rel="noopener">View source</a>
+      <a class="btn btn-ghost" href="https://github.com/git-abhisar-singh/TerminalPad" target="_blank" rel="noopener">View source</a>
     </div>
-    <div class="install-line" data-copy="git clone https://github.com/git-abhisar-singh/AgentPad.git && cd AgentPad && ./install.sh">
-      <code><span class="prompt">$</span> git clone …/AgentPad.git &amp;&amp; ./install.sh</code>
+    <div class="install-line" data-copy="git clone https://github.com/git-abhisar-singh/TerminalPad.git && cd TerminalPad && ./install.sh">
+      <code><span class="prompt">$</span> git clone …/TerminalPad.git &amp;&amp; ./install.sh</code>
       <button class="copy" aria-label="Copy install command">Copy</button>
     </div>
     <p class="micro">Free &amp; open source · No Apple account · Builds locally, no Gatekeeper warning</p>
@@ -69,7 +69,7 @@
       <div class="titlebar">
         <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
         <img src="assets/logo.png" class="win-logo" alt="" />
-        <span class="win-title">AgentPad</span>
+        <span class="win-title">TerminalPad</span>
       </div>
       <div class="search"><span class="mag">⌕</span> Search agents and tools…</div>
       <div class="section-label">Agents</div>
@@ -127,7 +127,7 @@
     <article class="card reveal">
       <div class="ic">{ }</div>
       <h3>JSON config</h3>
-      <p>Add or edit agents in <code>~/.config/agentpad/agents.json</code>, hit reload. No rebuild, no ceremony.</p>
+      <p>Add or edit agents in <code>~/.config/terminalpad/agents.json</code>, hit reload. No rebuild, no ceremony.</p>
     </article>
   </div>
 </section>
@@ -137,13 +137,13 @@
   <div class="install-card reveal">
     <h2>Install in 30 seconds.</h2>
     <p>Requires macOS 26 (Tahoe). Just the Swift toolchain — <code>xcode-select --install</code> is enough, no full Xcode.</p>
-    <div class="code-block" data-copy="git clone https://github.com/git-abhisar-singh/AgentPad.git
-cd AgentPad
+    <div class="code-block" data-copy="git clone https://github.com/git-abhisar-singh/TerminalPad.git
+cd TerminalPad
 ./install.sh">
       <button class="copy" aria-label="Copy">Copy</button>
 <pre><span class="c"># clone, build, and drop it in /Applications</span>
-<span class="p">$</span> git clone https://github.com/git-abhisar-singh/AgentPad.git
-<span class="p">$</span> cd AgentPad
+<span class="p">$</span> git clone https://github.com/git-abhisar-singh/TerminalPad.git
+<span class="p">$</span> cd TerminalPad
 <span class="p">$</span> ./install.sh</pre>
     </div>
     <p class="micro">You compile it yourself — so there's no Gatekeeper warning, and no $99 Apple Developer account required.</p>
@@ -158,7 +158,7 @@ cd AgentPad
   <div class="steps">
     <div class="step reveal"><span class="n">1</span><div><h3>Open</h3><p>Hit <kbd>⌥⌘Space</kbd> or click the menu-bar icon. The glass panel appears, search already focused.</p></div></div>
     <div class="step reveal"><span class="n">2</span><div><h3>Find</h3><p>Type a few letters. Your agents and every installed CLI rank instantly by relevance and frequency.</p></div></div>
-    <div class="step reveal"><span class="n">3</span><div><h3>Launch</h3><p>Press <kbd>Enter</kbd>. AgentPad opens a fresh Terminal window and runs the exact command — in the right folder, in your login shell.</p></div></div>
+    <div class="step reveal"><span class="n">3</span><div><h3>Launch</h3><p>Press <kbd>Enter</kbd>. TerminalPad opens a fresh Terminal window and runs the exact command — in the right folder, in your login shell.</p></div></div>
   </div>
 </section>
 
@@ -167,15 +167,15 @@ cd AgentPad
   <img src="assets/icon.png" alt="" class="final-icon" />
   <h2>Stop typing the same flags.</h2>
   <p>Make your agents one keystroke away.</p>
-  <a class="btn btn-primary lg" href="#install">Install AgentPad</a>
+  <a class="btn btn-primary lg" href="#install">Install TerminalPad</a>
 </section>
 </main>
 
 <footer class="footer">
-  <div class="foot-brand"><img src="assets/icon.png" alt="" /> AgentPad</div>
+  <div class="foot-brand"><img src="assets/icon.png" alt="" /> TerminalPad</div>
   <div class="foot-links">
-    <a href="https://github.com/git-abhisar-singh/AgentPad" target="_blank" rel="noopener">GitHub</a>
-    <a href="https://github.com/git-abhisar-singh/AgentPad/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    <a href="https://github.com/git-abhisar-singh/TerminalPad" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/git-abhisar-singh/TerminalPad/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
   </div>
   <p class="foot-fine">© 2026 Abhisar Singh · Brand logos are trademarks of their respective owners, via Simple Icons.</p>
 </footer>
