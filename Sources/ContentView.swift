@@ -501,6 +501,7 @@ struct AgentIcon: View {
             }
         }
         .frame(width: size, height: size)
+        .onAppear { logos.request(agent.logo) }   // fetch this tile's logo lazily when visible
     }
 }
 

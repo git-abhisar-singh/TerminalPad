@@ -10,6 +10,7 @@ final class LogoStore: ObservableObject {
 
     @Published private(set) var images: [String: NSImage] = [:]
     private var inFlight = Set<String>()
+    private var failed = Set<String>()      // negative cache — don't refetch known misses
 
     nonisolated private static let bundledDir = Bundle.main.resourceURL?.appendingPathComponent("logos")
     nonisolated private static var cacheDir: URL {
@@ -25,7 +26,9 @@ final class LogoStore: ObservableObject {
         return images[slug]
     }
 
-    /// Load any not-yet-loaded slugs in the background, publish in one batch, then fetch the rest online.
+    /// Batch-load already-available logos (bundled + on-disk cache) with NO network.
+    /// Safe to call with hundreds of slugs — anything not on disk is fetched lazily by
+    /// `request(_:)` when its tile actually appears, so we never spam the CDN.
     func preload(_ slugs: [String]) {
         let missing = slugs.filter { !$0.isEmpty && images[$0] == nil && !inFlight.contains($0) }
         guard !missing.isEmpty else { return }
@@ -33,28 +36,38 @@ final class LogoStore: ObservableObject {
 
         Task.detached(priority: .utility) {
             var loaded: [String: NSImage] = [:]
-            var needFetch: [String] = []
             for slug in missing {
                 if let url = Self.bundledDir?.appendingPathComponent("\(slug).png"),
                    let img = NSImage(contentsOf: url) {
                     loaded[slug] = img
                 } else if let img = NSImage(contentsOf: Self.cacheDir.appendingPathComponent("\(slug).png")) {
                     loaded[slug] = img
-                } else {
-                    needFetch.append(slug)
                 }
             }
             let snapshot = loaded
             await MainActor.run {
                 for (k, v) in snapshot { self.images[k] = v }
-                snapshot.keys.forEach { self.inFlight.remove($0) }
+                missing.forEach { self.inFlight.remove($0) }   // free non-loaded so request() can fetch later
             }
-            for slug in needFetch {
-                if let img = await Self.fetch(slug: slug) {
-                    await MainActor.run { self.images[slug] = img; self.inFlight.remove(slug) }
-                } else {
-                    await MainActor.run { self.inFlight.remove(slug) }
-                }
+        }
+    }
+
+    /// Lazily resolve one logo (bundled → cache → online fetch). Call from a tile's `.onAppear`
+    /// so only visible/searched tools hit the network, and failed slugs are never retried.
+    func request(_ slug: String?) {
+        guard let slug, !slug.isEmpty,
+              images[slug] == nil, !inFlight.contains(slug), !failed.contains(slug) else { return }
+        inFlight.insert(slug)
+        Task.detached(priority: .utility) {
+            if let url = Self.bundledDir?.appendingPathComponent("\(slug).png"),
+               let img = NSImage(contentsOf: url) {
+                await MainActor.run { self.images[slug] = img; self.inFlight.remove(slug) }
+            } else if let img = NSImage(contentsOf: Self.cacheDir.appendingPathComponent("\(slug).png")) {
+                await MainActor.run { self.images[slug] = img; self.inFlight.remove(slug) }
+            } else if let img = await Self.fetch(slug: slug) {
+                await MainActor.run { self.images[slug] = img; self.inFlight.remove(slug) }
+            } else {
+                await MainActor.run { self.inFlight.remove(slug); self.failed.insert(slug) }
             }
         }
     }

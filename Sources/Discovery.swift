@@ -2,16 +2,6 @@ import Foundation
 
 /// Scans the Mac for installed command-line tools and turns each into a launchable Agent.
 enum Discovery {
-    static let binDirs: [String] = {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return [
-            "/opt/homebrew/bin", "/opt/homebrew/sbin",
-            "/usr/local/bin", "/usr/local/sbin",
-            "\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin",
-            "\(home)/.bun/bin", "/usr/bin"
-        ]
-    }()
-
     /// command-name overrides for formulae whose primary binary differs from the formula name.
     static let aliases: [String: String] = [
         "postgresql": "psql", "redis": "redis-cli", "python": "python3",
@@ -19,11 +9,16 @@ enum Discovery {
         "ripgrep": "rg", "the_silver_searcher": "ag"
     ]
 
-    /// Tools that aren't meaningfully runnable on their own (libs / build deps) — skip.
+    /// Exact names that are libraries / build helpers / internal shims — not tools you'd launch.
     static let skip: Set<String> = [
         "portaudio", "openssl", "ca-certificates", "readline", "libyaml",
-        "pkg-config", "gmp", "mpfr", "libtool", "icu4c", "zlib", "xz",
-        "lz4", "zstd", "pcre2", "gettext", "sqlite"
+        "pkg-config", "pkgconf", "gmp", "mpfr", "libtool", "libtoolize", "icu4c",
+        "zlib", "xz", "lz4", "zstd", "pcre2", "pcre", "gettext", "sqlite",
+        "c_rehash", "captoinfo", "infotocap", "tabs", "tic", "toe", "tput", "tset",
+        "clear", "reset", "infocmp", "2to3", "idle3", "pydoc3", "wheel",
+        "normalizer", "futurize", "pasteurize", "chardetect", "distro",
+        "glow-completion", "x86_64-w64-mingw32-gcc", "update-mime-database",
+        "openssl3", "krb5-config", "freetype-config", "gpg-error", "gpgrt-config"
     ]
 
     static func run(_ path: String, _ args: [String]) -> String {
@@ -39,79 +34,79 @@ enum Discovery {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
-    static func resolve(_ rawName: String) -> (cmd: String, path: String)? {
-        // strip tap prefix (anomalyco/tap/opencode -> opencode) and @version
-        var name = rawName.split(separator: "/").last.map(String.init) ?? rawName
-        if let at = name.firstIndex(of: "@") { name = String(name[..<at]) }
-        if skip.contains(name) { return nil }
-        let candidate = aliases[name] ?? name
-        for dir in binDirs {
-            let full = "\(dir)/\(candidate)"
-            if FileManager.default.isExecutableFile(atPath: full) {
-                return (candidate, full)
-            }
-        }
-        return nil
+    /// True for names that are clearly not user-facing tools (libs, *-config helpers, single
+    /// letters, version-suffixed dupes). Keeps the grid full of real tools without coreutils noise.
+    static func shouldSkip(_ cmd: String) -> Bool {
+        if skip.contains(cmd) { return true }
+        if cmd.count < 2 { return true }                                  // `[`, `x`, …
+        if cmd.hasSuffix("-config") { return true }                       // pcre2-config, sdl2-config
+        if cmd.hasPrefix("lib") && cmd != "libreoffice" { return true }   // libpng16, libtool, …
+        if cmd.hasPrefix("_") { return true }
+        if cmd.contains(".") { return true }                              // foo.bak, foo.dylib
+        return false
+    }
+
+    /// Every directory we scan for executables. Built from the login shell's real
+    /// PATH (a GUI app doesn't inherit it) plus every common installer/version-manager
+    /// location — so anything a developer installs is found, whatever put it there.
+    static func scanDirs() -> [String] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        var dirs = Set<String>()
+
+        // The user's real login PATH — covers brew, npm, pipx, cargo, go, custom dirs, …
+        let shellPath = run("/bin/zsh", ["-lc", "printf %s \"$PATH\""])
+        dirs.formUnion(shellPath.split(separator: ":").map(String.init))
+
+        // Known locations, in case they aren't on PATH for this GUI session.
+        dirs.formUnion([
+            "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/usr/local/sbin",
+            "/opt/local/bin", "/opt/local/sbin",                                   // MacPorts
+            "\(home)/.local/bin", "\(home)/bin", "\(home)/.bin",
+            "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin", "\(home)/.deno/bin",
+            "\(home)/.npm-global/bin", "\(home)/.yarn/bin", "\(home)/Library/pnpm",
+            "\(home)/.dotnet/tools", "\(home)/.composer/vendor/bin", "\(home)/.cabal/bin",
+            "\(home)/.mix/escripts", "\(home)/.rye/shims", "\(home)/.modular/bin",
+            // version-manager shims
+            "\(home)/.local/share/mise/shims", "\(home)/.asdf/shims", "\(home)/.volta/bin",
+            "\(home)/.rbenv/shims", "\(home)/.pyenv/shims", "\(home)/.nodenv/shims",
+            "\(home)/.local/share/aquaproj-aqua/bin"
+        ])
+
+        // Never scan the macOS base bins — they'd flood the grid with coreutils (ls, cat, …).
+        dirs.subtract(["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/var/run", ""])
+        return Array(dirs)
     }
 
     /// Returns discovered tools as Agents, excluding any command already covered by curated agents.
     static func tools(excluding curated: Set<String>) -> [Agent] {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let fm = FileManager.default
 
-        // The 3 subprocess scans (brew ~1.2s, npm ~0.4s, pipx ~0.1s) are independent —
-        // run them concurrently so the scan costs max(...) not sum(...).
+        // Collect every executable across all scan dirs (parallel dir reads).
         let group = DispatchGroup()
         let lock = NSLock()
-        var names: [String] = []
-        func add(_ items: [String]) { lock.lock(); names += items; lock.unlock() }
-
-        // 1. Homebrew installed-on-request formulae
-        if let brew = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
-            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+        var names = Set<String>()
+        for dir in scanDirs() {
             group.enter()
             DispatchQueue.global().async {
-                add(run(brew, ["leaves"]).split(whereSeparator: \.isNewline).map(String.init))
-                group.leave()
+                defer { group.leave() }
+                guard let items = try? fm.contentsOfDirectory(atPath: dir) else { return }
+                var found: [String] = []
+                for f in items where !f.hasPrefix(".") {
+                    if fm.isExecutableFile(atPath: "\(dir)/\(f)") { found.append(f) }
+                }
+                lock.lock(); names.formUnion(found); lock.unlock()
             }
         }
-
-        // 2. npm global packages
-        if let npm = ["/opt/homebrew/bin/npm", "/usr/local/bin/npm"]
-            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
-            group.enter()
-            DispatchQueue.global().async {
-                add(run(npm, ["ls", "-g", "--depth=0", "--parseable"])
-                    .split(whereSeparator: \.isNewline)
-                    .compactMap { $0.split(separator: "/").last.map(String.init) }
-                    .filter { $0 != "lib" && !$0.hasPrefix("@") })
-                group.leave()
-            }
-        }
-
-        // 3. pipx apps
-        if let pipx = ["/opt/homebrew/bin/pipx", "\(home)/.local/bin/pipx"]
-            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
-            group.enter()
-            DispatchQueue.global().async {
-                add(run(pipx, ["list", "--short"])
-                    .split(whereSeparator: \.isNewline)
-                    .compactMap { $0.split(separator: " ").first.map(String.init) })
-                group.leave()
-            }
-        }
-
-        // 4. user-local / language bins (cargo, go, bun, etc.) — cheap dir reads, do inline
-        for dir in ["\(home)/.local/bin", "\(home)/.cargo/bin", "\(home)/go/bin", "\(home)/.bun/bin"] {
-            if let items = try? FileManager.default.contentsOfDirectory(atPath: dir) { add(items) }
-        }
-
         group.wait()
 
         var seen = Set<String>()
         var out: [Agent] = []
-        for raw in names {
-            guard let (cmd, _) = resolve(raw.trimmingCharacters(in: .whitespaces)) else { continue }
-            if curated.contains(cmd) || seen.contains(cmd) { continue }
+        for raw in names.sorted() {
+            // strip @version (e.g. node@20), apply formula→binary aliases
+            var name = raw
+            if let at = name.firstIndex(of: "@") { name = String(name[..<at]) }
+            let cmd = aliases[name] ?? name
+            if shouldSkip(cmd) || curated.contains(cmd) || seen.contains(cmd) { continue }
             seen.insert(cmd)
             out.append(makeAgent(cmd))
         }

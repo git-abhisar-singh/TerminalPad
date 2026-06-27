@@ -14,6 +14,8 @@ TARGETS = {
     # AI agents
     "claude": ["claude", "anthropic"], "gemini": ["googlegemini"], "ollama": ["ollama"],
     "opencode": ["opencode"], "antigravity": ["antigravity"],
+    "openai": ["openai"], "githubcopilot": ["githubcopilot"],
+    "huggingface": ["huggingface"], "mistralai": ["mistralai"], "perplexity": ["perplexity"],
     # languages / runtimes
     "node": ["nodedotjs"], "python": ["python"], "go": ["go"], "rust": ["rust"],
     "ruby": ["ruby"], "php": ["php"], "deno": ["deno"], "bun": ["bun"],

@@ -131,7 +131,47 @@ enum ConfigStore {
             Variant(label: "Gemma3 4B",         command: "ollama run gemma3:4b",                    icon: "cpu",                  color: "#C9CDD3"),
             Variant(label: "DeepSeek v3.1",     command: "ollama run deepseek-v3.1:671b-cloud",     icon: "cloud.fill",           color: "#8AA0FF"),
             Variant(label: "List Models",       command: "ollama list",                             icon: "list.bullet",          color: "#9AA0A6")
-        ], logo: "ollama", aliases: ["ol", "llm"])
+        ], logo: "ollama", aliases: ["ol", "llm"]),
+        Agent(name: "Codex", icon: "CX", color: "#10A37F", variants: [
+            Variant(label: "Normal",            command: "codex",                                   icon: "play.fill",            color: "#10A37F"),
+            Variant(label: "Full Auto",         command: "codex --full-auto",                       icon: "bolt.fill",            color: "#0E8C6D"),
+            Variant(label: "Resume",            command: "codex resume",                            icon: "arrow.uturn.left",     color: "#0B6E56")
+        ], logo: nil, aliases: ["cx", "openai", "codex"]),
+        Agent(name: "Copilot CLI", icon: "CP", color: "#6E7681", variants: [
+            Variant(label: "Normal",            command: "copilot",                                 icon: "play.fill",            color: "#6E7681"),
+            Variant(label: "Suggest",           command: "gh copilot suggest",                      icon: "lightbulb.fill",       color: "#8957E5")
+        ], logo: "githubcopilot", aliases: ["copilot", "ghcs"]),
+        Agent(name: "Aider", icon: "AD", color: "#14B8A6", variants: [
+            Variant(label: "Normal",            command: "aider",                                   icon: "play.fill",            color: "#14B8A6"),
+            Variant(label: "Architect",         command: "aider --architect",                       icon: "compass.drawing",      color: "#0E9488"),
+            Variant(label: "No Auto-Commit",    command: "aider --no-auto-commits",                 icon: "hand.raised.fill",     color: "#0B7268")
+        ], logo: nil, aliases: ["aider"]),
+        Agent(name: "Cursor", icon: "CU", color: "#0098FF", variants: [
+            Variant(label: "Agent",             command: "cursor-agent",                            icon: "play.fill",            color: "#0098FF"),
+            Variant(label: "Resume",            command: "cursor-agent resume",                     icon: "arrow.uturn.left",     color: "#0077CC")
+        ], logo: nil, aliases: ["cursor", "cursor-agent"]),
+        Agent(name: "Goose", icon: "GO", color: "#5A4FCF", variants: [
+            Variant(label: "Session",           command: "goose session",                           icon: "play.fill",            color: "#5A4FCF"),
+            Variant(label: "Run",               command: "goose run",                               icon: "bolt.fill",            color: "#473EA8")
+        ], logo: nil, aliases: ["goose"]),
+        Agent(name: "Qwen Code", icon: "QW", color: "#615CED", variants: [
+            Variant(label: "Normal",            command: "qwen",                                    icon: "play.fill",            color: "#615CED")
+        ], logo: nil, aliases: ["qwen", "qwen-code"]),
+        Agent(name: "Crush", icon: "CR", color: "#FF6AC1", variants: [
+            Variant(label: "Normal",            command: "crush",                                   icon: "play.fill",            color: "#FF6AC1")
+        ], logo: nil, aliases: ["crush"]),
+        Agent(name: "Amp", icon: "AM", color: "#F34E3F", variants: [
+            Variant(label: "Normal",            command: "amp",                                     icon: "play.fill",            color: "#F34E3F")
+        ], logo: nil, aliases: ["amp"]),
+        Agent(name: "Cline", icon: "CL", color: "#3B82F6", variants: [
+            Variant(label: "Normal",            command: "cline",                                   icon: "play.fill",            color: "#3B82F6")
+        ], logo: nil, aliases: ["cline"]),
+        Agent(name: "OpenHands", icon: "OH", color: "#FF7E33", variants: [
+            Variant(label: "Normal",            command: "openhands",                               icon: "play.fill",            color: "#FF7E33")
+        ], logo: nil, aliases: ["openhands", "oh"]),
+        Agent(name: "Grok CLI", icon: "GK", color: "#111111", variants: [
+            Variant(label: "Normal",            command: "grok",                                    icon: "play.fill",            color: "#111111")
+        ], logo: nil, aliases: ["grok", "xai"])
     ]
 }
 
