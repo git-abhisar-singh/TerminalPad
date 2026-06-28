@@ -40,6 +40,16 @@ That's it. No third-party SDKs, no ad networks, no crash reporters.
 You grant these through macOS system prompts and can revoke them anytime in
 **System Settings → Privacy & Security**.
 
+## The app vs. the website
+
+The **TerminalPad app** has **zero** analytics or telemetry — full stop.
+
+The **project website** (this landing page) uses **Cloudflare Web Analytics**,
+which is **cookieless** and collects **no personal data** and no cross-site
+tracking — just aggregate counts like page views, referrers, and country. It
+sets no cookies and needs no consent banner. It runs only on the website, never
+in the app.
+
 ## Changes
 
 Any change to this policy will be reflected in this file and the project's
